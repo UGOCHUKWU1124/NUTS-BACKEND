@@ -118,6 +118,8 @@ export class ProductVariantListResponseDto {
   product!: ProductVariantProductRefDto;
 }
 
+import { PaginationMetaDto } from 'src/modules/shared/dto/pagination-meta.dto';
+
 export class AllVariantsResponseDto {
   @ApiProperty({
     type: () => VariantSummaryDto,
@@ -125,6 +127,6 @@ export class AllVariantsResponseDto {
   })
   data!: VariantSummaryDto[];
 
-  @ApiProperty({ description: 'Pagination metadata' })
-  meta!: { total: number; page: number; limit: number; totalPages: number };
+  @ApiProperty({ description: 'Pagination metadata', type: () => PaginationMetaDto })
+  meta!: PaginationMetaDto;
 }

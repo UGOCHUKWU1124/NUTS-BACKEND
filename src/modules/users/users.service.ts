@@ -20,6 +20,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { QueryUserDto } from './dto/query-user.dto';
 
 import { DeactivateAccountResponseDto } from './dto/deactivate-account-response.dto';
+import { PaginationMetaDto } from 'src/modules/shared/dto/pagination-meta.dto';
 import { createPaginationMeta } from 'src/modules/shared/utils/pagination-meta.util';
 import { getPagination } from 'src/modules/shared/utils/pagination.util';
 import { DEFAULT_ACCOUNT_DELETION_GRACE_DAYS } from './constants/account-lifecycle.constants';
@@ -108,7 +109,7 @@ export class UsersService {
   //get all users
   async findAll(query: QueryUserDto): Promise<{
     data: UserListItemResponseDto[];
-    meta: { total: number; page: number; limit: number; totalPages: number };
+    meta: PaginationMetaDto;
   }> {
     const { page = 1, limit = 10, search, role, isActive } = query;
     const where: Prisma.UserWhereInput = {};

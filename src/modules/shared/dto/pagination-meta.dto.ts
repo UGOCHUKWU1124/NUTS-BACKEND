@@ -19,10 +19,6 @@ export class PaginationMetaDto {
   })
   totalItems!: number;
 
-  /** @deprecated Use totalItems instead. Kept for backward compatibility */
-  @ApiProperty({ description: 'Total items (alias)', example: 100 })
-  total!: number;
-
   @ApiProperty({
     description: 'Total number of pages available',
     example: 5,
@@ -46,7 +42,6 @@ export class PaginationMetaDto {
     const dto = new PaginationMetaDto();
     dto.page = page;
     dto.limit = limit;
-    dto.total = total;
     dto.totalItems = total;
     dto.totalPages = totalPages;
     dto.hasNextPage = page < totalPages;

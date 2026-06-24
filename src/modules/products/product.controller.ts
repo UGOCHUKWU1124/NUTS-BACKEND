@@ -20,7 +20,7 @@ import { PublicProductResponseDto } from './dto/public-product-response.dto';
 import { Message } from 'src/modules/shared/decorators/message.decorator';
 import { Public } from 'src/modules/shared/decorators/public.decorator';
 import type { RequestWithUser } from 'src/modules/shared/interfaces/request-with-user.interface';
-import { ApiResponseDto } from 'src/modules/shared/dto/api-response.dto';
+import { ApiResponseDto, PaginationMetaDto } from 'src/modules/shared/dto/api-response.dto';
 
 @ApiTags('PRODUCTS')
 @Public()
@@ -85,7 +85,7 @@ export class ProductController {
     @Req() req: Request,
   ): Promise<{
     data: PublicProductResponseDto[];
-    meta: { total: number; page: number; limit: number; totalPages: number };
+    meta: PaginationMetaDto;
   }> {
     const bypassCache =
       req.headers['x-cache-bypass'] === 'true' &&

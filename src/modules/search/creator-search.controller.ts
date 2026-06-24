@@ -1,18 +1,21 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiExtraModels,
   ApiOperation,
   ApiResponse,
   ApiTags,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { SearchService } from 'src/modules/shared/search/search.service';
 import { QuerySearchDto } from './dto/query-search.dto';
-import { SearchResponseDto } from './dto/search-result.dto';
+import { SearchResponseDto, SearchResultDto } from './dto/search-result.dto';
 import { CreatorJwtAuthGuard } from 'src/modules/creators/guards/creator-auth.guard';
 import { GetCreator } from 'src/modules/shared/decorators/get-creator.decorator';
 import { AuthStrategy } from 'src/modules/shared/decorators/auth-strategy.decorator';
 import { ApiResponseDto } from 'src/modules/shared/dto/api-response.dto';
 
+@ApiExtraModels(SearchResultDto, ApiResponseDto)
 @ApiTags('CREATOR - SEARCH')
 @ApiBearerAuth('JWT-auth')
 @Controller('creators/search')
@@ -27,7 +30,22 @@ export class CreatorSearchController {
     description:
       'Search across your own products, orders, and discount codes. Requires Creator authentication.',
   })
-  @ApiResponse({ status: 200, type: ApiResponseDto<SearchResponseDto> })
+  @ApiResponse({
+    status: 200,
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(ApiResponseDto) },
+        {
+          properties: {
+            data: {
+              type: 'array',
+              items: { $ref: getSchemaPath(SearchResultDto) },
+            },
+          },
+        },
+      ],
+    },
+  })
   async search(
     @GetCreator('id') creatorId: string,
     @Query() query: QuerySearchDto,
@@ -44,7 +62,6 @@ export class CreatorSearchController {
       results: [],
       pagination: {
         totalItems: 0,
-        total: 0,
         page,
         limit,
         totalPages: 0,
@@ -76,7 +93,6 @@ export class CreatorSearchController {
       results: results ?? [],
       pagination: {
         totalItems: results?.length ?? 0,
-        total: results?.length ?? 0,
         page: 1,
         limit,
         totalPages: 1,

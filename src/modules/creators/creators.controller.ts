@@ -65,7 +65,7 @@ export class CreatorsController {
       'Create a new creator account with email, password, and store details.',
   })
   @ApiBody({ type: CreateCreatorDto })
-  @ApiResponse({ status: 201, type: CreatorProfileDto })
+  @ApiResponse({ status: 201, type: ApiResponseDto<CreatorProfileDto> })
   @ApiConflictResponse({
     description: 'Creator with this email already exists',
   })
@@ -125,14 +125,17 @@ export class CreatorsController {
   async logout(
     @GetCreator('id') creatorId: string,
     @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<null> {
     await this.creatorsService.logout(
       creatorId,
       extractIpAddress(req),
       extractUserAgent(req),
     );
+    this.authCookies.clearAuthCookies(res);
     return null;
   }
+
 
   @Public()
   @StrictThrottle()

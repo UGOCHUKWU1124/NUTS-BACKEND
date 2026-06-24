@@ -186,7 +186,7 @@ export class UsersController {
   @ApiBody({ type: ReactivateAccountDto })
   @ApiOkResponse({
     description: 'Account reactivated successfully.',
-    type: UserResponseDto,
+    type: ApiResponseDto<UserResponseDto>,
   })
   @ApiBadRequestResponse({
     description:

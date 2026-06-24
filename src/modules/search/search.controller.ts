@@ -9,12 +9,13 @@ import {
 } from '@nestjs/swagger';
 import { SearchService } from 'src/modules/shared/search/search.service';
 import { QuerySearchDto } from './dto/query-search.dto';
-import { SearchResponseDto } from './dto/search-result.dto';
+import { SearchResponseDto, SearchResultDto } from './dto/search-result.dto';
 import { SearchProductsResponseDto } from './dto/search-products-response.dto';
+import { SearchProductHitDto } from './dto/search-product-hit.dto';
 import { Public } from 'src/modules/shared/decorators/public.decorator';
 import { ApiResponseDto } from 'src/modules/shared/dto/api-response.dto';
 
-@ApiExtraModels(SearchResponseDto, SearchProductsResponseDto)
+@ApiExtraModels(SearchResultDto, SearchProductHitDto, ApiResponseDto)
 @ApiTags('SEARCH')
 @Public()
 @Controller('search')
@@ -40,8 +41,8 @@ export class SearchController {
           properties: {
             data: {
               oneOf: [
-                { $ref: getSchemaPath(SearchResponseDto) },
-                { $ref: getSchemaPath(SearchProductsResponseDto) },
+                { type: 'array', items: { $ref: getSchemaPath(SearchResultDto) } },
+                { type: 'array', items: { $ref: getSchemaPath(SearchProductHitDto) } },
               ],
             },
           },
@@ -66,7 +67,6 @@ export class SearchController {
         hits: [],
         pagination: {
           totalItems: 0,
-          total: 0,
           page,
           limit,
           totalPages: 0,
@@ -90,7 +90,6 @@ export class SearchController {
       results: [],
       pagination: {
         totalItems: 0,
-        total: 0,
         page,
         limit,
         totalPages: 0,
@@ -120,7 +119,6 @@ export class SearchController {
       results: results ?? [],
       pagination: {
         totalItems: results?.length ?? 0,
-        total: results?.length ?? 0,
         page: 1,
         limit: query.limit ?? 10,
         totalPages: 1,
