@@ -94,12 +94,7 @@ export class WalletService {
     tx?: Prisma.TransactionClient,
   ): Promise<void> {
     const execute = async (client: Prisma.TransactionClient) => {
-      const wallet = await client.creatorWallet.findUnique({
-        where: { creatorId },
-      });
-      if (!wallet) {
-        throw new NotFoundException('Creator wallet not found');
-      }
+      const wallet = await this.ensureCreatorWalletInTx(client, creatorId);
 
       await client.creatorWallet.update({
         where: { creatorId },
@@ -134,12 +129,7 @@ export class WalletService {
     tx?: Prisma.TransactionClient,
   ): Promise<void> {
     const execute = async (client: Prisma.TransactionClient) => {
-      const wallet = await client.creatorWallet.findUnique({
-        where: { creatorId },
-      });
-      if (!wallet) {
-        throw new NotFoundException('Creator wallet not found');
-      }
+      const wallet = await this.ensureCreatorWalletInTx(client, creatorId);
 
       const newPending = wallet.pendingBalance.sub(amount);
       if (newPending.lt(0)) {
@@ -179,12 +169,7 @@ export class WalletService {
     tx?: Prisma.TransactionClient,
   ): Promise<void> {
     const execute = async (client: Prisma.TransactionClient) => {
-      const wallet = await client.creatorWallet.findUnique({
-        where: { creatorId },
-      });
-      if (!wallet) {
-        throw new NotFoundException('Creator wallet not found');
-      }
+      const wallet = await this.ensureCreatorWalletInTx(client, creatorId);
 
       const newPending = wallet.pendingBalance.sub(amount);
       // Only reverse what is available in pending; skip if nothing to reverse
@@ -400,6 +385,23 @@ export class WalletService {
       wallet = await this.prisma.creatorWallet.create({
         data: { creatorId },
         include,
+      });
+    }
+
+    return wallet;
+  }
+
+  private async ensureCreatorWalletInTx(
+    client: Prisma.TransactionClient,
+    creatorId: string,
+  ): Promise<Prisma.CreatorWalletGetPayload<Record<string, never>>> {
+    let wallet = await client.creatorWallet.findUnique({
+      where: { creatorId },
+    });
+
+    if (!wallet) {
+      wallet = await client.creatorWallet.create({
+        data: { creatorId },
       });
     }
 
