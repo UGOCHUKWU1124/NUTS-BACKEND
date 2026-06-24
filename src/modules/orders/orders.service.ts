@@ -596,170 +596,187 @@ export class OrdersService {
     let orderUserId: string | undefined;
     let originalStatus: OrderStatus | undefined;
 
-    await this.prisma.$transaction(async (tx) => {
-      const current = await tx.order.findUnique({
-        where: { id: orderId },
-        include: {
-          orderItems: true,
-          payment: true,
-        },
-      });
-      if (!current) throw new NotFoundException('Order not found');
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const current = await tx.order.findUnique({
+          where: { id: orderId },
+          include: {
+            orderItems: true,
+            payment: true,
+          },
+        });
+        if (!current) throw new NotFoundException('Order not found');
 
-      orderUserId = current.userId;
-      originalStatus = current.status;
+        orderUserId = current.userId;
+        originalStatus = current.status;
 
-      if (originalStatus === nextStatus) return;
+        if (originalStatus === nextStatus) return;
 
-      assertValidOrderTransition(originalStatus, nextStatus);
+        assertValidOrderTransition(originalStatus, nextStatus);
 
-      const updated = await tx.order.updateMany({
-        where: { id: orderId, status: originalStatus },
-        data: { status: nextStatus },
-      });
+        const updated = await tx.order.updateMany({
+          where: { id: orderId, status: originalStatus },
+          data: { status: nextStatus },
+        });
 
-      if (updated.count === 0) {
-        throw new ConflictException(
-          'Order status was updated by another request; refresh and retry',
-        );
-      }
+        if (updated.count === 0) {
+          throw new ConflictException(
+            'Order status was updated by another request; refresh and retry',
+          );
+        }
 
-      const restoreStock =
-        shouldRestoreStock(originalStatus, nextStatus) &&
-        !current.stockRestored;
+        const restoreStock =
+          shouldRestoreStock(originalStatus, nextStatus) &&
+          !current.stockRestored;
 
-      if (restoreStock) {
-        for (const item of current.orderItems) {
-          if (item.variantId) {
-            // Restore variant stock by incrementing directly
-            const v = await tx.productVariant.findFirst({
-              where: { id: item.variantId! },
-              select: { id: true, stock: true, productId: true },
-            });
-            if (v) {
-              const oldStock = v.stock;
-              const newStock = v.stock + item.quantity;
-              await tx.productVariant.update({
+        if (restoreStock) {
+          for (const item of current.orderItems) {
+            if (item.variantId) {
+              // Restore variant stock by incrementing directly
+              const v = await tx.productVariant.findFirst({
                 where: { id: item.variantId! },
-                data: { stock: newStock },
+                select: { id: true, stock: true, productId: true },
               });
-              await tx.stockHistory.create({
-                data: {
-                  productId: v.productId,
-                  variantId: item.variantId!,
-                  adjustment: item.quantity,
-                  oldStockQuantity: oldStock,
-                  newStockQuantity: newStock,
-                  description: 'Stock restored (order cancelled)',
-                },
-              });
-            }
-          } else {
-            // Restore product base stock
-            const prod = await tx.product.findFirst({
-              where: { id: item.productId },
-              select: { id: true, stock: true },
-            });
-            if (prod) {
-              const oldStock = prod.stock;
-              await tx.product.update({
+              if (v) {
+                const oldStock = v.stock;
+                const newStock = v.stock + item.quantity;
+                await tx.productVariant.update({
+                  where: { id: item.variantId! },
+                  data: { stock: newStock },
+                });
+                await tx.stockHistory.create({
+                  data: {
+                    productId: v.productId,
+                    variantId: item.variantId!,
+                    adjustment: item.quantity,
+                    oldStockQuantity: oldStock,
+                    newStockQuantity: newStock,
+                    description: 'Stock restored (order cancelled)',
+                  },
+                });
+              }
+            } else {
+              // Restore product base stock
+              const prod = await tx.product.findFirst({
                 where: { id: item.productId },
-                data: { stock: { increment: item.quantity } },
+                select: { id: true, stock: true },
               });
-              await tx.stockHistory.create({
-                data: {
-                  productId: item.productId,
-                  adjustment: item.quantity,
-                  oldStockQuantity: oldStock,
-                  newStockQuantity: oldStock + item.quantity,
-                  description: 'Stock restored (order cancelled)',
-                },
-              });
+              if (prod) {
+                const oldStock = prod.stock;
+                await tx.product.update({
+                  where: { id: item.productId },
+                  data: { stock: { increment: item.quantity } },
+                });
+                await tx.stockHistory.create({
+                  data: {
+                    productId: item.productId,
+                    adjustment: item.quantity,
+                    oldStockQuantity: oldStock,
+                    newStockQuantity: oldStock + item.quantity,
+                    description: 'Stock restored (order cancelled)',
+                  },
+                });
+              }
             }
           }
-        }
-        await tx.order.update({
-          where: { id: orderId },
-          data: { stockRestored: true },
-        });
-      }
-
-      if (current.payment) {
-        const nextPaymentStatus = resolvePaymentStatusAfterOrderChange(
-          current.payment.status,
-          nextStatus,
-        );
-        if (nextPaymentStatus && nextPaymentStatus !== current.payment.status) {
-          await tx.payment.update({
-            where: { id: current.payment.id },
-            data: { status: nextPaymentStatus },
+          await tx.order.update({
+            where: { id: orderId },
+            data: { stockRestored: true },
           });
         }
-      }
 
-      await tx.orderStatusHistory.create({
-        data: {
-          orderId,
-          fromStatus: originalStatus,
-          toStatus: nextStatus,
-          changedByUserId,
-          changedByCreatorId,
-          changedByAdminId,
-          note: generateStatusNote({
+        if (current.payment) {
+          const nextPaymentStatus = resolvePaymentStatusAfterOrderChange(
+            current.payment.status,
+            nextStatus,
+          );
+          if (
+            nextPaymentStatus &&
+            nextPaymentStatus !== current.payment.status
+          ) {
+            await tx.payment.update({
+              where: { id: current.payment.id },
+              data: { status: nextPaymentStatus },
+            });
+          }
+        }
+
+        await tx.orderStatusHistory.create({
+          data: {
+            orderId,
             fromStatus: originalStatus,
             toStatus: nextStatus,
-            changedByAdminId,
-            changedByCreatorId,
             changedByUserId,
-            manualNote: note?.trim() || undefined,
-          }),
-        },
+            changedByCreatorId,
+            changedByAdminId,
+            note: generateStatusNote({
+              fromStatus: originalStatus,
+              toStatus: nextStatus,
+              changedByAdminId,
+              changedByCreatorId,
+              changedByUserId,
+              manualNote: note?.trim() || undefined,
+            }),
+          },
+        });
+
+        // Settle creator earnings when order is delivered
+        if (nextStatus === OrderStatus.DELIVERED) {
+          const creatorEarnings = new Map<string, Prisma.Decimal>();
+          for (const item of current.orderItems) {
+            const earning = new Prisma.Decimal(
+              Number(
+                (Number(item.unitPrice) * item.quantity * 0.85).toFixed(2),
+              ),
+            );
+            const existing =
+              creatorEarnings.get(item.creatorId) ?? new Prisma.Decimal(0);
+            creatorEarnings.set(item.creatorId, existing.add(earning));
+          }
+
+          for (const [creatorId, earning] of creatorEarnings) {
+            await this.walletService.settleCreatorEarning(
+              creatorId,
+              earning,
+              orderId,
+              tx,
+            );
+          }
+        }
+
+        // Reverse pending creator earnings when order is cancelled (only pending, not settled)
+        if (nextStatus === OrderStatus.CANCELLED) {
+          const creatorEarnings = new Map<string, Prisma.Decimal>();
+          for (const item of current.orderItems) {
+            const earning = new Prisma.Decimal(
+              Number(
+                (Number(item.unitPrice) * item.quantity * 0.85).toFixed(2),
+              ),
+            );
+            const existing =
+              creatorEarnings.get(item.creatorId) ?? new Prisma.Decimal(0);
+            creatorEarnings.set(item.creatorId, existing.add(earning));
+          }
+
+          for (const [creatorId, earning] of creatorEarnings) {
+            await this.walletService.debitCreatorPending(
+              creatorId,
+              earning,
+              orderId,
+              tx,
+            );
+          }
+        }
       });
-
-      // Settle creator earnings when order is delivered
-      if (nextStatus === OrderStatus.DELIVERED) {
-        const creatorEarnings = new Map<string, Prisma.Decimal>();
-        for (const item of current.orderItems) {
-          const earning = new Prisma.Decimal(
-            Number((Number(item.unitPrice) * item.quantity * 0.85).toFixed(2)),
-          );
-          const existing =
-            creatorEarnings.get(item.creatorId) ?? new Prisma.Decimal(0);
-          creatorEarnings.set(item.creatorId, existing.add(earning));
-        }
-
-        for (const [creatorId, earning] of creatorEarnings) {
-          await this.walletService.settleCreatorEarning(
-            creatorId,
-            earning,
-            orderId,
-            tx,
-          );
-        }
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.startsWith('Invalid order transition:')
+      ) {
+        throw new BadRequestException(error.message);
       }
-
-      // Reverse pending creator earnings when order is cancelled (only pending, not settled)
-      if (nextStatus === OrderStatus.CANCELLED) {
-        const creatorEarnings = new Map<string, Prisma.Decimal>();
-        for (const item of current.orderItems) {
-          const earning = new Prisma.Decimal(
-            Number((Number(item.unitPrice) * item.quantity * 0.85).toFixed(2)),
-          );
-          const existing =
-            creatorEarnings.get(item.creatorId) ?? new Prisma.Decimal(0);
-          creatorEarnings.set(item.creatorId, existing.add(earning));
-        }
-
-        for (const [creatorId, earning] of creatorEarnings) {
-          await this.walletService.debitCreatorPending(
-            creatorId,
-            earning,
-            orderId,
-            tx,
-          );
-        }
-      }
-    });
+      throw error;
+    }
 
     // Grant referral rewards when a referred user's order is delivered.
     // Both the referred user and the referrer receive wallet credits.
