@@ -7,6 +7,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { OrderStatus, PaymentStatus, Prisma } from '@prisma/client';
 import { PrismaService } from 'src/modules/infrastructure/prisma/prisma.service';
 import { AuditLogService } from 'src/modules/shared/audit-log/audit-log.service';
@@ -24,6 +25,12 @@ import { ShippingAddressesService } from 'src/modules/shipping-addresses/shippin
 import { customAlphabet } from 'nanoid';
 import { PaymentsService } from 'src/modules/payments/payments.service';
 import { WalletService } from 'src/modules/wallet/wallet.service';
+import { DomainEvents } from 'src/modules/shared/events/domain-events';
+import type {
+  OrderShippedPayload,
+  OrderDeliveredPayload,
+  OrderCancelledPayload,
+} from 'src/modules/shared/events/event-payloads';
 import { createPaginationMeta } from 'src/modules/shared/utils/pagination-meta.util';
 import { getPagination } from 'src/modules/shared/utils/pagination.util';
 import { PaginationQueryDto } from 'src/modules/shared/dto/pagination-query.dto';
@@ -160,6 +167,7 @@ export class OrdersService {
     private readonly emailService: EmailService,
     private readonly auditLog: AuditLogService,
     private readonly walletService: WalletService,
+    private readonly eventEmitter: EventEmitter2,
     config: ConfigService,
   ) {
     this.revalidatePrices =
@@ -765,6 +773,14 @@ export class OrdersService {
           ),
         );
     }
+
+    // Emit domain events for status changes so email notifications are sent
+    this.emitStatusChangeEvents(orderId, nextStatus, orderUserId).catch((err) =>
+      this.logger.error(
+        `Failed to emit status change events for order ${orderId}`,
+        err,
+      ),
+    );
 
     return orderId;
   }
@@ -1432,6 +1448,88 @@ export class OrdersService {
         `Failed to send order confirmation email for order ${order.id}`,
         err,
       );
+    }
+  }
+
+  private async emitStatusChangeEvents(
+    orderId: string,
+    nextStatus: OrderStatus,
+    orderUserId: string | undefined,
+  ): Promise<void> {
+    if (!orderUserId) return;
+
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        user: { select: { id: true, email: true, firstName: true } },
+        orderItems: {
+          include: {
+            product: { select: { name: true } },
+            variant: { select: { options: true } },
+            creator: { select: { id: true, email: true, storeName: true } },
+          },
+        },
+      },
+    });
+
+    if (!order || !order.user) return;
+
+    const mapItems = () =>
+      order.orderItems.map((item) => ({
+        productName: item.product.name,
+        quantity: item.quantity,
+        unitPrice: Number(item.unitPrice),
+        totalPrice: Number(item.totalPrice),
+        variantOptions: item.variant
+          ? (item.variant.options as { name: string; value: string }[])
+          : undefined,
+      }));
+
+    switch (nextStatus) {
+      case OrderStatus.SHIPPED: {
+        const payload: OrderShippedPayload = {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          userId: order.userId,
+          userEmail: order.user.email,
+          userFirstName: order.user.firstName,
+          creatorEmails: order.orderItems.map((item) => ({
+            creatorId: item.creator.id,
+            email: item.creator.email,
+            storeName: item.creator.storeName,
+          })),
+          trackingNumber: undefined,
+          items: mapItems(),
+        };
+        this.eventEmitter.emit(DomainEvents.ORDER_SHIPPED, payload);
+        break;
+      }
+      case OrderStatus.DELIVERED: {
+        const payload: OrderDeliveredPayload = {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          userId: order.userId,
+          userEmail: order.user.email,
+          userFirstName: order.user.firstName,
+          items: mapItems(),
+        };
+        this.eventEmitter.emit(DomainEvents.ORDER_DELIVERED, payload);
+        break;
+      }
+      case OrderStatus.CANCELLED: {
+        const payload: OrderCancelledPayload = {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          userId: order.userId,
+          userEmail: order.user.email,
+          userFirstName: order.user.firstName,
+          reason: undefined,
+          refundProcessed: false,
+          items: mapItems(),
+        };
+        this.eventEmitter.emit(DomainEvents.ORDER_CANCELLED, payload);
+        break;
+      }
     }
   }
 }
