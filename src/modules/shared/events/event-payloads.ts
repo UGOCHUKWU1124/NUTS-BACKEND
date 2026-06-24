@@ -8,6 +8,14 @@ export interface OrderProcessingPayload {
   finalAmount: number;
   currency: string;
   creatorIds: string[];
+  items: {
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    variantOptions?: { name: string; value: string }[];
+  }[];
+  shippingAddress: string;
 }
 
 export interface OrderShippedPayload {
@@ -18,6 +26,13 @@ export interface OrderShippedPayload {
   userFirstName: string | null;
   creatorEmails: { creatorId: string; email: string; storeName: string }[];
   trackingNumber?: string;
+  items: {
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    variantOptions?: { name: string; value: string }[];
+  }[];
 }
 
 export interface OrderDeliveredPayload {
@@ -26,6 +41,13 @@ export interface OrderDeliveredPayload {
   userId: string;
   userEmail: string;
   userFirstName: string | null;
+  items: {
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    variantOptions?: { name: string; value: string }[];
+  }[];
 }
 
 export interface OrderCancelledPayload {
@@ -36,6 +58,13 @@ export interface OrderCancelledPayload {
   userFirstName: string | null;
   reason?: string;
   refundProcessed: boolean;
+  items: {
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    variantOptions?: { name: string; value: string }[];
+  }[];
 }
 
 export interface PaymentConfirmedPayload {
@@ -47,6 +76,7 @@ export interface PaymentConfirmedPayload {
   userFirstName: string | null;
   amount: number;
   currency: string;
+  paymentReference: string;
 }
 
 export interface PaymentFailedPayload {
@@ -64,6 +94,7 @@ export interface ReferralRewardCreditedPayload {
   referrerId: string;
   referrerEmail: string;
   referredUserId: string;
+  referrerName: string;
   rewardAmount: number;
 }
 
@@ -85,7 +116,13 @@ export interface NewOrderForCreatorPayload {
   creatorEmail: string;
   creatorStoreName: string;
   customerName: string;
-  items: { productName: string; quantity: number; price: number }[];
+  items: {
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    variantOptions?: { name: string; value: string }[];
+  }[];
   totalAmount: number;
   currency: string;
 }

@@ -12,6 +12,8 @@ export const QUEUE_JOB_NAMES = {
   EMAIL_ORDER_SHIPPED: 'email.order.shipped',
   EMAIL_ORDER_DELIVERED: 'email.order.delivered',
   EMAIL_NEW_ORDER_CREATOR: 'email.new.order.creator',
+  EMAIL_ORDER_CANCELLED: 'email.order.cancelled',
+  EMAIL_PAYMENT_CONFIRMED: 'email.payment.confirmed',
   EMAIL_CREATOR_PAYMENT_CONFIRMED: 'email.creator.payment.confirmed',
   EMAIL_PAYMENT_FAILED: 'email.payment.failed',
   EMAIL_REFERRAL_REWARD: 'email.referral.reward',

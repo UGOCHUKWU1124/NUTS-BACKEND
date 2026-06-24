@@ -626,7 +626,12 @@ export class PaymentsService {
         include: {
           user: { select: { id: true, email: true, firstName: true } },
           payment: { select: { currency: true } },
-          orderItems: { select: { creatorId: true } },
+          orderItems: {
+            include: {
+              product: { select: { name: true } },
+              variant: { select: { options: true } },
+            },
+          },
         },
       });
 
@@ -644,6 +649,16 @@ export class PaymentsService {
         creatorIds: [
           ...new Set(order.orderItems.map((item) => item.creatorId)),
         ],
+        items: order.orderItems.map((item) => ({
+          productName: item.product.name,
+          quantity: item.quantity,
+          unitPrice: Number(item.unitPrice),
+          totalPrice: Number(item.totalPrice),
+          variantOptions: item.variant?.options as
+            | { name: string; value: string }[]
+            | undefined,
+        })),
+        shippingAddress: order.shippingAddress || '',
       };
 
       this.eventEmitter.emit(DomainEvents.ORDER_PROCESSING, payload);

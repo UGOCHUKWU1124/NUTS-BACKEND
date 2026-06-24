@@ -5,6 +5,13 @@ import {
   EmailSendJobData,
   OrderConfirmationEmailData,
   NewOrderForCreatorEmailData,
+  OrderShippedEmailData,
+  OrderDeliveredEmailData,
+  OrderCancelledEmailData,
+  PaymentConfirmedEmailData,
+  PaymentFailedEmailData,
+  ReferralRewardEmailData,
+  CreatorPaymentConfirmedEmailData,
   WeeklyCreatorSummaryEmailData,
   AbandonedCartEmailData,
   LowStockAlertEmailData,
@@ -86,6 +93,79 @@ export class EmailProcessor {
     await this.emailProvider.send({
       to: job.data.to,
       subject: `Low Stock Alert - ${job.data.productName}`,
+      html,
+    });
+  }
+
+  async processOrderShipped(job: Job<OrderShippedEmailData>): Promise<void> {
+    const html = this.emailTemplates.orderShipped(job.data);
+    await this.emailProvider.send({
+      to: job.data.to,
+      subject: `Your Order #${job.data.orderNumber} Has Shipped!`,
+      html,
+    });
+  }
+
+  async processOrderDelivered(
+    job: Job<OrderDeliveredEmailData>,
+  ): Promise<void> {
+    const html = this.emailTemplates.orderDelivered(job.data);
+    await this.emailProvider.send({
+      to: job.data.to,
+      subject: `Order Delivered - ${job.data.orderNumber}`,
+      html,
+    });
+  }
+
+  async processOrderCancelled(
+    job: Job<OrderCancelledEmailData>,
+  ): Promise<void> {
+    const html = this.emailTemplates.orderCancelled(job.data);
+    await this.emailProvider.send({
+      to: job.data.to,
+      subject: `Order #${job.data.orderNumber} Cancelled`,
+      html,
+    });
+  }
+
+  async processPaymentConfirmed(
+    job: Job<PaymentConfirmedEmailData>,
+  ): Promise<void> {
+    const html = this.emailTemplates.paymentConfirmed(job.data);
+    await this.emailProvider.send({
+      to: job.data.to,
+      subject: `Payment Confirmed - Order #${job.data.orderNumber}`,
+      html,
+    });
+  }
+
+  async processPaymentFailed(job: Job<PaymentFailedEmailData>): Promise<void> {
+    const html = this.emailTemplates.paymentFailed(job.data);
+    await this.emailProvider.send({
+      to: job.data.to,
+      subject: `Payment Failed - Order #${job.data.orderNumber}`,
+      html,
+    });
+  }
+
+  async processReferralReward(
+    job: Job<ReferralRewardEmailData>,
+  ): Promise<void> {
+    const html = this.emailTemplates.referralRewardCredited(job.data);
+    await this.emailProvider.send({
+      to: job.data.to,
+      subject: 'You Earned a Referral Reward!',
+      html,
+    });
+  }
+
+  async processCreatorPaymentConfirmed(
+    job: Job<CreatorPaymentConfirmedEmailData>,
+  ): Promise<void> {
+    const html = this.emailTemplates.creatorPaymentConfirmed(job.data);
+    await this.emailProvider.send({
+      to: job.data.to,
+      subject: `Earnings Credited - Order #${job.data.orderNumber}`,
       html,
     });
   }

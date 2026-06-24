@@ -78,6 +78,27 @@ export class QueueModule implements OnModuleInit {
         case QUEUE_JOB_NAMES.EMAIL_LOW_STOCK_ALERT:
           await this.emailProcessor.processLowStockAlert(job as any);
           break;
+        case QUEUE_JOB_NAMES.EMAIL_ORDER_SHIPPED:
+          await this.emailProcessor.processOrderShipped(job as any);
+          break;
+        case QUEUE_JOB_NAMES.EMAIL_ORDER_DELIVERED:
+          await this.emailProcessor.processOrderDelivered(job as any);
+          break;
+        case QUEUE_JOB_NAMES.EMAIL_ORDER_CANCELLED:
+          await this.emailProcessor.processOrderCancelled(job as any);
+          break;
+        case QUEUE_JOB_NAMES.EMAIL_PAYMENT_CONFIRMED:
+          await this.emailProcessor.processPaymentConfirmed(job as any);
+          break;
+        case QUEUE_JOB_NAMES.EMAIL_PAYMENT_FAILED:
+          await this.emailProcessor.processPaymentFailed(job as any);
+          break;
+        case QUEUE_JOB_NAMES.EMAIL_REFERRAL_REWARD:
+          await this.emailProcessor.processReferralReward(job as any);
+          break;
+        case QUEUE_JOB_NAMES.EMAIL_CREATOR_PAYMENT_CONFIRMED:
+          await this.emailProcessor.processCreatorPaymentConfirmed(job as any);
+          break;
         default:
           await this.emailProcessor.processSend(job as any);
       }
