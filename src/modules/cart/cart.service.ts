@@ -89,6 +89,7 @@ export class CartService {
   async addToCart(
     userId: string,
     productId: string,
+    quantity: number,
     variantId?: string,
     addedFrom?: AddedFromDto,
   ): Promise<AddToCartResponseDto> {
@@ -113,7 +114,8 @@ export class CartService {
       throw new BadRequestException('This product does not support variants');
     }
 
-    // Fetch variant if there is one
+    // Fetch variant and check stock
+    let availableStock = product.stock;
     if (normalizedVariantId) {
       const variant = await this.prisma.productVariant.findFirst({
         where: { id: normalizedVariantId, productId },
@@ -124,6 +126,7 @@ export class CartService {
           'Variant not found or does not belong to this product',
         );
       }
+      availableStock = variant.stock;
     }
 
     const cart = await this.getOrCreateActiveCart(userId);
@@ -149,8 +152,13 @@ export class CartService {
       });
 
       const unitPrice = Number(product.price);
-      const quantity = 1;
       const newQuantity = (existingItem?.quantity ?? 0) + quantity;
+
+      if (newQuantity > availableStock) {
+        throw new BadRequestException(
+          `Insufficient stock. Available: ${availableStock}, requested: ${newQuantity}`,
+        );
+      }
 
       if (existingItem) {
         await prisma.cartItem.update({
@@ -178,9 +186,12 @@ export class CartService {
     // Return full cart + the specific item that was added/incremented
     const fullCart = await this.getCartWithSyncedPrices(userId);
     const response = this.toResponse(fullCart);
-    const addedItem = response.cartItems.find(
-      (i) => i.productId === productId && i.variant?.id === (normalizedVariantId ?? undefined),
-    ) ?? response.cartItems.find((i) => i.productId === productId);
+    const addedItem =
+      response.cartItems.find(
+        (i) =>
+          i.productId === productId &&
+          i.variant?.id === (normalizedVariantId ?? undefined),
+      ) ?? response.cartItems.find((i) => i.productId === productId);
     return { cart: response.cart, addedItem: addedItem! };
   }
 
@@ -230,7 +241,9 @@ export class CartService {
     const response = this.toResponse(cart);
     const updatedItem =
       response.cartItems.find(
-        (i) => i.productId === productId && i.variant?.id === (normalizedVariantId ?? undefined),
+        (i) =>
+          i.productId === productId &&
+          i.variant?.id === (normalizedVariantId ?? undefined),
       ) ??
       response.cartItems.find((i) => i.productId === productId) ??
       null;
