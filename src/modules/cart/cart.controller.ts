@@ -94,6 +94,7 @@ export class CartController {
     return this.cartService.addToCart(
       userId,
       productId,
+      dto.quantity,
       variantId,
       dto.addedFrom,
     );
