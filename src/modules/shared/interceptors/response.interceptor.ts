@@ -10,6 +10,7 @@ import { Reflector } from '@nestjs/core';
 import { map, Observable } from 'rxjs';
 
 import { MESSAGE_KEY } from 'src/modules/shared/decorators/message.decorator';
+import { BYPASS_RESPONSE_INTERCEPTOR_KEY } from 'src/modules/shared/decorators/bypass-response-interceptor.decorator';
 
 import {
   ApiResponseDto,
@@ -19,6 +20,11 @@ import {
 type PaginatedPayload<T> = {
   data: T[];
   meta: PaginationMetaDto;
+};
+
+type PaginatedResultsPayload<T> = {
+  results: T[];
+  pagination: PaginationMetaDto;
 };
 
 function isPaginatedPayload(
@@ -37,17 +43,52 @@ function isPaginatedPayload(
   );
 }
 
+function isPaginatedResultsPayload(
+  value: unknown,
+): value is PaginatedResultsPayload<unknown> {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+
+  return (
+    Array.isArray(record.results) &&
+    typeof record.pagination === 'object' &&
+    record.pagination !== null
+  );
+}
+
+function isApiResponseDto(value: unknown): value is ApiResponseDto<unknown> {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+
+  return typeof record.success === 'boolean';
+}
+
 @Injectable()
 export class ResponseInterceptor<T> implements NestInterceptor<
   T,
-  ApiResponseDto<T>
+  ApiResponseDto<T> | T
 > {
   constructor(private readonly reflector: Reflector) {}
 
   intercept(
     context: ExecutionContext,
     next: CallHandler,
-  ): Observable<ApiResponseDto<T>> {
+  ): Observable<ApiResponseDto<T> | T> {
+    const bypass = this.reflector.getAllAndOverride<boolean>(
+      BYPASS_RESPONSE_INTERCEPTOR_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+
+    if (bypass) {
+      return next.handle();
+    }
+
     const message =
       this.reflector.getAllAndOverride<string>(MESSAGE_KEY, [
         context.getHandler(),
@@ -55,8 +96,16 @@ export class ResponseInterceptor<T> implements NestInterceptor<
       ]) || 'Request successful';
 
     return next.handle().pipe(
-      map((data: unknown): ApiResponseDto<T> => {
+      map((data: unknown): ApiResponseDto<T> | any => {
         const timestamp = new Date().toISOString();
+
+        if (isApiResponseDto(data)) {
+          return {
+            ...data,
+            timestamp: (data as any).timestamp || timestamp,
+          };
+        }
+
 
         if (data === null || data === undefined) {
           return {
@@ -77,6 +126,16 @@ export class ResponseInterceptor<T> implements NestInterceptor<
           };
         }
 
+        if (isPaginatedResultsPayload(data)) {
+          return {
+            success: true,
+            message,
+            data: data.results as T,
+            meta: data.pagination,
+            timestamp,
+          };
+        }
+
         return {
           success: true,
           message,
@@ -87,3 +146,4 @@ export class ResponseInterceptor<T> implements NestInterceptor<
     );
   }
 }
+

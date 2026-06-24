@@ -9,6 +9,8 @@ import {
   WalletTransactionReason,
   WalletTransactionType,
 } from '@prisma/client';
+import { PaginationMetaDto } from 'src/modules/shared/dto/pagination-meta.dto';
+import { buildPaginationMeta } from 'src/modules/shared/utils/pagination-meta.util';
 
 @Injectable()
 export class WalletService {
@@ -277,7 +279,7 @@ export class WalletService {
       referenceId: string | null;
       createdAt: Date;
     }>;
-    meta: { total: number; page: number; limit: number; totalPages: number };
+    meta: PaginationMetaDto;
   }> {
     const wallet = await this.ensureUserWallet(userId);
 
@@ -304,12 +306,7 @@ export class WalletService {
         referenceId: tx.referenceId,
         createdAt: tx.createdAt,
       })),
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      meta: buildPaginationMeta(total, page, limit),
     };
   }
 
@@ -326,7 +323,7 @@ export class WalletService {
       referenceId: string | null;
       createdAt: Date;
     }>;
-    meta: { total: number; page: number; limit: number; totalPages: number };
+    meta: PaginationMetaDto;
   }> {
     const wallet = await this.ensureCreatorWallet(creatorId);
 
@@ -353,12 +350,7 @@ export class WalletService {
         referenceId: tx.referenceId,
         createdAt: tx.createdAt,
       })),
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      meta: buildPaginationMeta(total, page, limit),
     };
   }
 

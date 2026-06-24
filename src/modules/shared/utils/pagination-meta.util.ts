@@ -14,7 +14,6 @@ export function buildPaginationMeta(
     page,
     limit,
     totalItems: total,
-    total,
     totalPages,
     hasNextPage: page < totalPages,
     hasPreviousPage: page > 1,
