@@ -14,7 +14,10 @@ import { Message } from 'src/modules/shared/decorators/message.decorator';
 import { WalletService } from './wallet.service';
 import { UserWalletResponseDto } from './dto/user-wallet-response.dto';
 import { WalletTransactionResponseDto } from './dto/wallet-transaction-response.dto';
-import { ApiResponseDto } from 'src/modules/shared/dto/api-response.dto';
+import {
+  ApiResponseDto,
+  PaginationMetaDto,
+} from 'src/modules/shared/dto/api-response.dto';
 
 @ApiTags('USER WALLET')
 @ApiBearerAuth('JWT-auth')
@@ -73,7 +76,7 @@ export class UserWalletController {
     @Query('limit') limit?: string,
   ): Promise<{
     data: WalletTransactionResponseDto[];
-    meta: { total: number; page: number; limit: number; totalPages: number };
+    meta: PaginationMetaDto;
   }> {
     const safePage = Math.max(1, Number(page) || 1);
     const safeLimit = Math.min(Math.max(1, Number(limit) || 20), 100);
