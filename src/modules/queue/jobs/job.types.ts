@@ -1,5 +1,16 @@
 import { QueueJobData } from 'src/modules/shared/interfaces/queue.interface';
 
+// ── Shared Email Item Type ────────────────────────────────
+
+export interface EmailOrderItem {
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  variantOptions?: { name: string; value: string }[];
+  productImage?: string;
+}
+
 // ── Email Job Types ──────────────────────────────────────
 
 export interface EmailSendJobData extends QueueJobData {
@@ -21,7 +32,7 @@ export interface OrderConfirmationEmailData extends QueueJobData {
   to: string;
   orderNumber: string;
   customerName: string;
-  items: { productName: string; quantity: number; price: number }[];
+  items: EmailOrderItem[];
   totalAmount: number;
   discountAmount: number;
   discountCode?: string;
@@ -35,9 +46,70 @@ export interface NewOrderForCreatorEmailData extends QueueJobData {
   creatorStoreName: string;
   orderNumber: string;
   customerName: string;
-  items: { productName: string; quantity: number; price: number }[];
+  items: EmailOrderItem[];
   totalAmount: number;
   currency: string;
+  orderTotalForCreator: number;
+}
+
+export interface OrderShippedEmailData extends QueueJobData {
+  to: string;
+  orderNumber: string;
+  customerName: string;
+  items: EmailOrderItem[];
+  trackingNumber?: string;
+  shippingAddress: string;
+  currency: string;
+}
+
+export interface OrderDeliveredEmailData extends QueueJobData {
+  to: string;
+  orderNumber: string;
+  customerName: string;
+  items: EmailOrderItem[];
+  currency: string;
+}
+
+export interface OrderCancelledEmailData extends QueueJobData {
+  to: string;
+  orderNumber: string;
+  customerName: string;
+  items: EmailOrderItem[];
+  reason?: string;
+  refundProcessed: boolean;
+  currency: string;
+}
+
+export interface PaymentConfirmedEmailData extends QueueJobData {
+  to: string;
+  orderNumber: string;
+  customerName: string;
+  items: EmailOrderItem[];
+  amount: number;
+  currency: string;
+  paymentReference: string;
+}
+
+export interface PaymentFailedEmailData extends QueueJobData {
+  to: string;
+  orderNumber: string;
+  customerName: string;
+  reason?: string;
+}
+
+export interface ReferralRewardEmailData extends QueueJobData {
+  to: string;
+  referrerName: string;
+  rewardAmount: number;
+  currency: string;
+}
+
+export interface CreatorPaymentConfirmedEmailData extends QueueJobData {
+  to: string;
+  creatorStoreName: string;
+  amount: number;
+  currency: string;
+  orderNumber: string;
 }
 
 export interface WeeklyCreatorSummaryEmailData extends QueueJobData {
@@ -50,6 +122,7 @@ export interface WeeklyCreatorSummaryEmailData extends QueueJobData {
   bestSellingProducts: { name: string; quantity: number; revenue: number }[];
   weekStart: string;
   weekEnd: string;
+  currency: string;
 }
 
 export interface AbandonedCartEmailData extends QueueJobData {

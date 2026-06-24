@@ -6,6 +6,13 @@ import {
   EmailSendJobData,
   OrderConfirmationEmailData,
   NewOrderForCreatorEmailData,
+  OrderShippedEmailData,
+  OrderDeliveredEmailData,
+  OrderCancelledEmailData,
+  PaymentConfirmedEmailData,
+  PaymentFailedEmailData,
+  ReferralRewardEmailData,
+  CreatorPaymentConfirmedEmailData,
   WeeklyCreatorSummaryEmailData,
   AbandonedCartEmailData,
   LowStockAlertEmailData,
@@ -54,7 +61,52 @@ export class EmailProducer {
     );
   }
 
-  async sendPaymentFailed(data: EmailSendJobData, options?: JobsOptions) {
+  async sendOrderShipped(data: OrderShippedEmailData, options?: JobsOptions) {
+    await this.bullMQService.addJob(
+      QUEUE_NAMES.EMAIL,
+      QUEUE_JOB_NAMES.EMAIL_ORDER_SHIPPED,
+      data,
+      options,
+    );
+  }
+
+  async sendOrderDelivered(
+    data: OrderDeliveredEmailData,
+    options?: JobsOptions,
+  ) {
+    await this.bullMQService.addJob(
+      QUEUE_NAMES.EMAIL,
+      QUEUE_JOB_NAMES.EMAIL_ORDER_DELIVERED,
+      data,
+      options,
+    );
+  }
+
+  async sendOrderCancelled(
+    data: OrderCancelledEmailData,
+    options?: JobsOptions,
+  ) {
+    await this.bullMQService.addJob(
+      QUEUE_NAMES.EMAIL,
+      QUEUE_JOB_NAMES.EMAIL_ORDER_CANCELLED,
+      data,
+      options,
+    );
+  }
+
+  async sendPaymentConfirmed(
+    data: PaymentConfirmedEmailData,
+    options?: JobsOptions,
+  ) {
+    await this.bullMQService.addJob(
+      QUEUE_NAMES.EMAIL,
+      QUEUE_JOB_NAMES.EMAIL_PAYMENT_CONFIRMED,
+      data,
+      options,
+    );
+  }
+
+  async sendPaymentFailed(data: PaymentFailedEmailData, options?: JobsOptions) {
     await this.bullMQService.addJob(
       QUEUE_NAMES.EMAIL,
       QUEUE_JOB_NAMES.EMAIL_PAYMENT_FAILED,
@@ -63,10 +115,25 @@ export class EmailProducer {
     );
   }
 
-  async sendReferralReward(data: EmailSendJobData, options?: JobsOptions) {
+  async sendReferralReward(
+    data: ReferralRewardEmailData,
+    options?: JobsOptions,
+  ) {
     await this.bullMQService.addJob(
       QUEUE_NAMES.EMAIL,
       QUEUE_JOB_NAMES.EMAIL_REFERRAL_REWARD,
+      data,
+      options,
+    );
+  }
+
+  async sendCreatorPaymentConfirmed(
+    data: CreatorPaymentConfirmedEmailData,
+    options?: JobsOptions,
+  ) {
+    await this.bullMQService.addJob(
+      QUEUE_NAMES.EMAIL,
+      QUEUE_JOB_NAMES.EMAIL_CREATOR_PAYMENT_CONFIRMED,
       data,
       options,
     );

@@ -112,6 +112,7 @@ export class CreatorSummaryCron {
           bestSellingProducts,
           weekStart: weekStartStr,
           weekEnd: weekEndStr,
+          currency: 'NGN',
         },
         {
           deduplication: {

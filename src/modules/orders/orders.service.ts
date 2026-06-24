@@ -1395,11 +1395,22 @@ export class OrdersService {
       });
       if (!user) return;
 
-      const items = order.items.map((i) => ({
-        productName: i.productSnapshot?.name ?? 'Unknown Product',
-        quantity: i.quantity,
-        price: i.unitPrice,
-      }));
+      const items = order.items.map((i) => {
+        const variantSnapshot = i.variantSnapshot as {
+          options: { name: string; value: string }[];
+        } | null;
+        const variantName = variantSnapshot?.options
+          ? variantSnapshot.options
+              .map((o) => `${o.name}: ${o.value}`)
+              .join(', ')
+          : undefined;
+        return {
+          productName: i.productSnapshot?.name ?? 'Unknown Product',
+          quantity: i.quantity,
+          price: i.unitPrice,
+          variantName,
+        };
+      });
 
       await this.emailService.sendOrderConfirmation(user.email, {
         orderNumber: order.orderNumber,

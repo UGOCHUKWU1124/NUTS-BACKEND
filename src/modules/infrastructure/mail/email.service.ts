@@ -252,9 +252,12 @@ export class EmailService {
       .map(
         (item) => `
         <tr>
-          <td>${item.productName}</td>
-          <td>${item.quantity}</td>
-          <td>${data.currency.toUpperCase()} ${item.price.toFixed(2)}</td>
+          <td>
+            ${item.productName}
+            ${item.variantName ? `<div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">${item.variantName}</div>` : ''}
+          </td>
+          <td style="text-align: center;">${item.quantity}</td>
+          <td style="text-align: right;">${data.currency.toUpperCase()} ${item.price.toFixed(2)}</td>
         </tr>
       `,
       )
@@ -293,13 +296,16 @@ export class EmailService {
       <div class="email-body">
         <p>Hello ${data.customerName},</p>
         <p>Your order <strong>#${data.orderNumber}</strong> has been placed successfully. A proforma invoice is attached for your reference.</p>
+        <div class="details-box">
+          <p>Shipping to: ${data.shippingAddress}</p>
+        </div>
         ${discountHtml}
         <table class="table">
           <thead>
             <tr>
               <th>Product</th>
-              <th>Qty</th>
-              <th>Price</th>
+              <th style="text-align: center;">Qty</th>
+              <th style="text-align: right;">Price</th>
             </tr>
           </thead>
           <tbody>
@@ -311,6 +317,21 @@ export class EmailService {
   }
 
   private buildPaymentReceiptHtml(data: PdfInvoiceData): string {
+    const itemsHtml = data.items
+      .map(
+        (item) => `
+        <tr>
+          <td>
+            ${item.productName}
+            ${item.variantName ? `<div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">${item.variantName}</div>` : ''}
+          </td>
+          <td style="text-align: center;">${item.quantity}</td>
+          <td style="text-align: right;">${data.currency.toUpperCase()} ${item.price.toFixed(2)}</td>
+        </tr>
+      `,
+      )
+      .join('');
+
     const discountHtml =
       data.discountAmount > 0
         ? `
@@ -337,8 +358,20 @@ export class EmailService {
       </div>
       <div class="email-body">
         <p>Hello ${data.customerName},</p>
-        <p>We’ve successfully received your payment of <strong>${data.currency.toUpperCase()} ${data.finalAmount.toFixed(2)}</strong> for order <strong>#${data.orderNumber}</strong>.</p>
+        <p>We've successfully received your payment of <strong>${data.currency.toUpperCase()} ${data.finalAmount.toFixed(2)}</strong> for order <strong>#${data.orderNumber}</strong>.</p>
         ${discountHtml}
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th style="text-align: center;">Qty</th>
+              <th style="text-align: right;">Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
         <div class="hero-card">
           <p>Your receipt is attached for your records.</p>
         </div>

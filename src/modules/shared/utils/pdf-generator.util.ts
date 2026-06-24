@@ -16,6 +16,7 @@ export interface PdfInvoiceData {
     productName: string;
     quantity: number;
     price: number;
+    variantName?: string;
   }>;
 }
 
@@ -87,25 +88,36 @@ export function generateInvoicePdf(
 
     let currentY = tableTop + 25;
     data.items.forEach((item) => {
+      // Product name
       doc.fontSize(10).fillColor('#374151');
       doc.text(item.productName, 50, currentY, { width: 250 });
-      doc.text(item.quantity.toString(), 300, currentY, {
+
+      // Variant info (smaller font, gray color)
+      if (item.variantName) {
+        doc.fontSize(8).fillColor('#9CA3AF');
+        doc.text(item.variantName, 50, currentY + 11, { width: 250 });
+      }
+
+      const itemY = item.variantName ? currentY + 4 : currentY;
+
+      doc.fontSize(10).fillColor('#374151');
+      doc.text(item.quantity.toString(), 300, itemY, {
         width: 50,
         align: 'right',
       });
       doc.text(
         `${data.currency.toUpperCase()} ${item.price.toFixed(2)}`,
         380,
-        currentY,
+        itemY,
         { width: 70, align: 'right' },
       );
       doc.text(
         `${data.currency.toUpperCase()} ${(item.price * item.quantity).toFixed(2)}`,
         470,
-        currentY,
+        itemY,
         { width: 70, align: 'right' },
       );
-      currentY += 20;
+      currentY += item.variantName ? 28 : 20;
     });
 
     // Draw totals section
