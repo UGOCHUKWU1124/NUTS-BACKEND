@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   HttpCode,
   HttpStatus,
   Param,
@@ -15,6 +16,7 @@ import {
   ApiBody,
   ApiConflictResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -40,6 +42,55 @@ import { ApiResponseDto } from 'src/modules/shared/dto/api-response.dto';
 @Roles(ROLE.ADMIN)
 export class AdminCategoryController {
   constructor(private readonly categoriesService: CategoriesService) {}
+
+  // ─── READ ────────────────────────────────────────────────────────────────────
+
+  @Get()
+  @Message('Categories retrieved successfully')
+  @ApiOperation({
+    summary: 'Get full category tree including inactive nodes (admin)',
+    description:
+      'Returns the complete nested category hierarchy — active and inactive — ' +
+      'so admins can see and manage all categories regardless of their visibility status.',
+  })
+  @ApiOkResponse({
+    type: ApiResponseDto<CategoryResponseDto[]>,
+    description: 'Full category tree returned (active + inactive).',
+  })
+  async getAdminTree(): Promise<CategoryResponseDto[]> {
+    return this.categoriesService.getAdminTree();
+  }
+
+  @Get(':slug')
+  @Message('Category retrieved successfully')
+  @ApiOperation({
+    summary: 'Get a single category by slug including inactive (admin)',
+    description:
+      'Fetches a category with its full nested children by slug. ' +
+      'Unlike the public endpoint, inactive categories are included.',
+  })
+  @ApiParam({
+    name: 'slug',
+    description: 'URL slug of the category to retrieve.',
+  })
+  @ApiOkResponse({
+    type: ApiResponseDto<
+      | CategoryResponseDto
+      | ParentsubcategoryResponseDto
+      | SubcategoryResponseDto
+    >,
+    description: 'Category found and returned.',
+  })
+  @ApiNotFoundResponse({ description: 'Category not found.' })
+  async findOne(
+    @Param('slug') slug: string,
+  ): Promise<
+    CategoryResponseDto | ParentsubcategoryResponseDto | SubcategoryResponseDto
+  > {
+    return this.categoriesService.findBySlugAdmin(slug);
+  }
+
+  // ─── WRITE ───────────────────────────────────────────────────────────────────
 
   @Post()
   @Message('Category created successfully')
@@ -127,9 +178,7 @@ export class AdminCategoryController {
     type: ApiResponseDto<null>,
     description: 'Category and all descendants activated.',
   })
-  @ApiNotFoundResponse({
-    description: 'Category not found.',
-  })
+  @ApiNotFoundResponse({ description: 'Category not found.' })
   async activate(@Param('slug') slug: string): Promise<null> {
     await this.categoriesService.setActive(slug, true);
     return null;
@@ -154,9 +203,7 @@ export class AdminCategoryController {
     type: ApiResponseDto<null>,
     description: 'Category and all descendants deactivated.',
   })
-  @ApiNotFoundResponse({
-    description: 'Category not found.',
-  })
+  @ApiNotFoundResponse({ description: 'Category not found.' })
   async deactivate(@Param('slug') slug: string): Promise<null> {
     await this.categoriesService.setActive(slug, false);
     return null;
@@ -181,9 +228,7 @@ export class AdminCategoryController {
     type: ApiResponseDto<null>,
     description: 'Category permanently deleted.',
   })
-  @ApiNotFoundResponse({
-    description: 'Category not found.',
-  })
+  @ApiNotFoundResponse({ description: 'Category not found.' })
   @ApiConflictResponse({
     description:
       'Conflict — category still has child categories or associated products.',

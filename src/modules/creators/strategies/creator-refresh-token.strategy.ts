@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, ExtractJwt } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from 'src/modules/infrastructure/prisma/prisma.service';
 
 export type CreatorRefreshTokenPayload = {
@@ -41,7 +42,26 @@ export class CreatorRefreshTokenStrategy extends PassportStrategy(
       return null;
     }
 
+    // Reject suspended or unapproved creators
+    if (!creator.isActive || !creator.isApproved) {
+      return null;
+    }
+
+    // Verify refresh token id matches before doing the expensive bcrypt compare
     if (creator.refreshTokenId !== payload.refreshId) {
+      return null;
+    }
+
+    // Extract raw token from Authorization header and verify against the stored hash
+    const authHeader: string | undefined =
+      req.headers?.['authorization'] ?? req.headers?.['Authorization'];
+    const rawToken = authHeader?.replace(/^Bearer\s+/i, '');
+    if (!rawToken) {
+      return null;
+    }
+
+    const tokenMatches = await bcrypt.compare(rawToken, creator.refreshToken);
+    if (!tokenMatches) {
       return null;
     }
 

@@ -41,6 +41,7 @@ import {
   resolvePaymentStatusAfterOrderChange,
   shouldRestoreStock,
 } from './constants/order-status.constants';
+import { CREATOR_COMMISSION_RATE } from 'src/modules/shared/constants/commission.constants';
 
 const orderInclude = {
   orderItems: {
@@ -726,7 +727,7 @@ export class OrdersService {
           for (const item of current.orderItems) {
             const earning = new Prisma.Decimal(
               Number(
-                (Number(item.unitPrice) * item.quantity * 0.85).toFixed(2),
+                (Number(item.unitPrice) * item.quantity * CREATOR_COMMISSION_RATE).toFixed(2),
               ),
             );
             const existing =
@@ -750,7 +751,7 @@ export class OrdersService {
           for (const item of current.orderItems) {
             const earning = new Prisma.Decimal(
               Number(
-                (Number(item.unitPrice) * item.quantity * 0.85).toFixed(2),
+                (Number(item.unitPrice) * item.quantity * CREATOR_COMMISSION_RATE).toFixed(2),
               ),
             );
             const existing =
