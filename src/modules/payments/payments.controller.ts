@@ -133,7 +133,6 @@ export class PaymentsController {
   initialize(
     @GetUser('id') userId: string,
     @Query('orderId', ParseUUIDPipe) orderId: string,
-    @Body() dto: InitializePaymentDto,
   ): Promise<InitializePaymentResponseDto> {
     return this.paymentsService.initializeForOrder(userId, orderId);
   }
@@ -230,8 +229,8 @@ export class PaymentsController {
   @ApiBadRequestResponse({ description: 'Invalid refund amount' })
   refund(
     @GetUser('id') adminId: string,
-    @Body() dto: RefundPaymentDto,
+    @Body() body: RefundPaymentDto,
   ): Promise<PaymentResponseDto> {
-    return this.paymentsService.refund(dto.paymentId, adminId, dto.amount);
+    return this.paymentsService.refund(body.paymentId, adminId, body.amount);
   }
 }

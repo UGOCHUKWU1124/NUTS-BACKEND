@@ -24,36 +24,25 @@ import {
   assertNoDuplicateVariantOptions,
   assertValidVariantOptions,
   normalizeOptions,
-  type VariantOptions,
 } from 'src/modules/shared/utils/variant-options.validator';
 import { PRODUCT_TTL } from 'src/modules/shared/constants/cache.constant';
 
 /**
  * Light variant select for product-level queries.
+ * @internal Not directly used here — kept for reference.
  */
-const variantSelect = {
-  id: true,
-  options: true,
-  stock: true,
-  images: true,
-  isActive: true,
-  isDeleted: true,
-} as const;
+// const _variantSelect = {
+//   id: true, options: true, stock: true, images: true, isActive: true, isDeleted: true,
+// } as const;
 
 /**
  * Full variant select for admin queries (includes audit timestamps).
+ * @internal Not directly used here — kept for reference.
  */
-const adminVariantSelect = {
-  id: true,
-  options: true,
-  stock: true,
-  images: true,
-  isActive: true,
-  isDeleted: true,
-  deletedAt: true,
-  createdAt: true,
-  updatedAt: true,
-} as const;
+// const _adminVariantSelect = {
+//   id: true, options: true, stock: true, images: true,
+//   isActive: true, isDeleted: true, deletedAt: true, createdAt: true, updatedAt: true,
+// } as const;
 
 // ── Include queries for product with minimal info ─────────────────────────────
 const productForVariantSelect = {
@@ -183,7 +172,7 @@ export class ProductVariantsService {
     this.ensureCreatorOwnsProduct(variant.product, creatorId);
 
     if (dto.options) {
-      assertValidVariantOptions(dto.options as unknown as VariantOptions);
+      assertValidVariantOptions(dto.options);
 
       const existingVariants = await this.prisma.productVariant.findMany({
         where: {
@@ -195,13 +184,14 @@ export class ProductVariantsService {
       });
 
       assertNoDuplicateVariantOptions(
-        dto.options as unknown as VariantOptions,
+        dto.options,
         existingVariants.map((v) => v.options),
       );
     }
 
     const data: Prisma.ProductVariantUpdateInput = {};
-    if (dto.options !== undefined) data.options = dto.options as any;
+    if (dto.options !== undefined)
+      data.options = dto.options as unknown as Prisma.InputJsonValue;
     if (dto.stock !== undefined) data.stock = dto.stock;
     if (dto.images !== undefined) data.images = dto.images;
 
@@ -398,7 +388,7 @@ export class ProductVariantsService {
     if (!variant) throw new NotFoundException('Variant not found');
 
     if (dto.options) {
-      assertValidVariantOptions(dto.options as unknown as VariantOptions);
+      assertValidVariantOptions(dto.options);
 
       const existingVariants = await this.prisma.productVariant.findMany({
         where: {
@@ -410,13 +400,14 @@ export class ProductVariantsService {
       });
 
       assertNoDuplicateVariantOptions(
-        dto.options as unknown as VariantOptions,
+        dto.options,
         existingVariants.map((v) => v.options),
       );
     }
 
     const data: Prisma.ProductVariantUpdateInput = {};
-    if (dto.options !== undefined) data.options = dto.options as any;
+    if (dto.options !== undefined)
+      data.options = dto.options as unknown as Prisma.InputJsonValue;
     if (dto.stock !== undefined) data.stock = dto.stock;
     if (dto.images !== undefined) data.images = dto.images;
 
@@ -615,7 +606,7 @@ export class ProductVariantsService {
     }
 
     if (dto.options) {
-      assertValidVariantOptions(dto.options as unknown as VariantOptions);
+      assertValidVariantOptions(dto.options);
 
       const existingVariants = await this.prisma.productVariant.findMany({
         where: { productId, isDeleted: false },
@@ -623,7 +614,7 @@ export class ProductVariantsService {
       });
 
       assertNoDuplicateVariantOptions(
-        dto.options as unknown as VariantOptions,
+        dto.options,
         existingVariants.map((v) => v.options),
       );
     }
@@ -634,7 +625,7 @@ export class ProductVariantsService {
         options: (dto.options ?? []).map((o) => ({
           name: o.name,
           value: o.value,
-        })) as any,
+        })),
         stock: dto.stock ?? 0,
         images: dto.images ?? [],
       },
@@ -660,7 +651,7 @@ export class ProductVariantsService {
     }
 
     if (dto.options) {
-      assertValidVariantOptions(dto.options as unknown as VariantOptions);
+      assertValidVariantOptions(dto.options);
 
       const existingVariants = await this.prisma.productVariant.findMany({
         where: { productId, isDeleted: false },
@@ -668,7 +659,7 @@ export class ProductVariantsService {
       });
 
       assertNoDuplicateVariantOptions(
-        dto.options as unknown as VariantOptions,
+        dto.options,
         existingVariants.map((v) => v.options),
       );
     }
@@ -679,7 +670,7 @@ export class ProductVariantsService {
         options: (dto.options ?? []).map((o) => ({
           name: o.name,
           value: o.value,
-        })) as any,
+        })),
         stock: dto.stock ?? 0,
         images: dto.images ?? [],
       },

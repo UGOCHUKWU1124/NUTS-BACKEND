@@ -167,7 +167,9 @@ export class AuthService {
 
     if (!user || !(await bcrypt.compare(dto.password, user.password))) {
       // Record failed attempt for brute-force protection
-      await this.accountLockService.recordFailedAttempt(identifier).catch(() => {});
+      await this.accountLockService
+        .recordFailedAttempt(identifier)
+        .catch(() => {});
       // Log failed login attempt
       await this.auditLog
         .log({
@@ -218,7 +220,8 @@ export class AuthService {
     });
 
     if (!user) throw new UnauthorizedException('User not found');
-    if (!user.isActive) throw new UnauthorizedException('Account is deactivated');
+    if (!user.isActive)
+      throw new UnauthorizedException('Account is deactivated');
 
     return this.issueSession(user);
   }

@@ -1,7 +1,9 @@
 import { Prisma } from '@prisma/client';
 import { VariantCombinations } from 'src/modules/shared/dto/variant-combinations.dto';
 
-type OptionsShape = { options: Prisma.JsonValue } | { options?: { name: string; value: string }[] };
+type OptionsShape =
+  | { options: Prisma.JsonValue }
+  | { options?: { name: string; value: string }[] };
 
 /**
  * Given an array of variant-like objects, extracts the unique option values
@@ -27,10 +29,12 @@ export function computeVariantCombinations(
     const options = Array.isArray(raw)
       ? raw
       : typeof raw === 'object' && raw !== null
-        ? Object.entries(raw as Record<string, string>).map(([name, value]) => ({
-            name,
-            value,
-          }))
+        ? Object.entries(raw as Record<string, string>).map(
+            ([name, value]) => ({
+              name,
+              value,
+            }),
+          )
         : [];
 
     for (const opt of options as { name: string; value: string }[]) {

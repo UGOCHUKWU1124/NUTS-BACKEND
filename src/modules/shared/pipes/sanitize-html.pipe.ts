@@ -1,5 +1,12 @@
 import { Injectable, PipeTransform } from '@nestjs/common';
-import sanitizeHtml from 'sanitize-html';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const sanitizeHtml = require('sanitize-html') as (
+  dirty: string,
+  options?: {
+    allowedTags?: string[];
+    allowedAttributes?: Record<string, string[]>;
+  },
+) => string;
 
 /**
  * Global pipe that sanitizes all string values in the incoming request body,
@@ -18,7 +25,6 @@ export class SanitizeHtmlPipe implements PipeTransform {
 
   private sanitize(value: unknown): unknown {
     if (typeof value === 'string') {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       const stripped: string = sanitizeHtml(value, {
         allowedTags: [], // strip all HTML tags
         allowedAttributes: {},

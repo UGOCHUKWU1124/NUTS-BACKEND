@@ -29,7 +29,10 @@ export class CreatorRefreshTokenStrategy extends PassportStrategy(
     });
   }
 
-  async validate(req: any, payload: CreatorRefreshTokenPayload) {
+  async validate(
+    req: { headers?: Record<string, string | string[] | undefined> },
+    payload: CreatorRefreshTokenPayload,
+  ) {
     if (payload.type !== 'creator') {
       return null;
     }
@@ -53,8 +56,11 @@ export class CreatorRefreshTokenStrategy extends PassportStrategy(
     }
 
     // Extract raw token from Authorization header and verify against the stored hash
-    const authHeader: string | undefined =
+    const rawAuthHeader =
       req.headers?.['authorization'] ?? req.headers?.['Authorization'];
+    const authHeader: string | undefined = Array.isArray(rawAuthHeader)
+      ? rawAuthHeader[0]
+      : rawAuthHeader;
     const rawToken = authHeader?.replace(/^Bearer\s+/i, '');
     if (!rawToken) {
       return null;

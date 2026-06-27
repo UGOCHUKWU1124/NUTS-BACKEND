@@ -141,7 +141,6 @@ export class CreatorsService {
       data: { creatorId: creator.id },
     });
 
-
     this.emailService
       .sendWelcomeEmail(dto.email, dto.firstName ?? '')
       .catch((err) => this.logger.error('Failed to send welcome email', err));
@@ -177,7 +176,9 @@ export class CreatorsService {
 
     if (!creator || !(await bcrypt.compare(dto.password, creator.password))) {
       // Record failed attempt for brute-force protection
-      await this.accountLockService.recordFailedAttempt(identifier).catch(() => {});
+      await this.accountLockService
+        .recordFailedAttempt(identifier)
+        .catch(() => {});
       // Log failed login attempt
       await this.auditLog
         .log({
@@ -305,7 +306,6 @@ export class CreatorsService {
       });
     }
 
-
     // Invalidate public store cache
     await this.cacheService.del(CREATOR_STORE(updated.storeSlug));
     await this.cacheService.delByPattern(
@@ -344,7 +344,6 @@ export class CreatorsService {
       ipAddress,
       userAgent,
     });
-
 
     return {
       id: updated.id,
@@ -417,7 +416,6 @@ export class CreatorsService {
       ipAddress,
       userAgent,
     });
-
 
     return {
       id: updated.id,
@@ -545,7 +543,7 @@ export class CreatorsService {
         };
 
         return {
-          store: this.toCreatorProfile(storeData as CreatorSelectPayload),
+          store: this.toCreatorProfile(storeData),
           products,
         };
       },
@@ -592,7 +590,6 @@ export class CreatorsService {
       updatedAt: creator.updatedAt,
     };
   }
-
 
   async resetPassword(
     dto: CreatorResetPasswordDto,
@@ -704,7 +701,9 @@ export class CreatorsService {
       { sub: creatorId, email, type: 'creator' },
       {
         secret: this.configService.getOrThrow('JWT_SECRET'),
-        expiresIn: this.configService.getOrThrow<string>('JWT_ACCESS_EXPIRES_IN') as StringValue,
+        expiresIn: this.configService.getOrThrow<string>(
+          'JWT_ACCESS_EXPIRES_IN',
+        ) as StringValue,
       },
     );
 
@@ -712,7 +711,10 @@ export class CreatorsService {
       { sub: creatorId, email, refreshId, type: 'creator' },
       {
         secret: this.configService.getOrThrow('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d') as StringValue,
+        expiresIn: this.configService.get<string>(
+          'JWT_REFRESH_EXPIRES_IN',
+          '7d',
+        ) as StringValue,
       },
     );
 

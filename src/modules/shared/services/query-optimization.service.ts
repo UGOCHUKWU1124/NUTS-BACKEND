@@ -30,23 +30,21 @@ export class QueryOptimizationService {
    * Combines count + fetch to avoid double queries
    */
   async fetchPaginated<T>(
-    model: any,
-    where: any,
+    model: Record<string, (...args: unknown[]) => unknown>,
+    where: unknown,
     options: PaginationOptions,
-    include?: any,
+    include?: unknown,
   ): Promise<{ data: T[]; total: number; page: number; limit: number }> {
     const { page, limit, sortBy = 'createdAt', sortOrder = 'desc' } = options;
 
-    const [total, data] = await this.prisma.$transaction([
-      model.count({ where }),
-      model.findMany({
-        where,
-        include,
-        orderBy: { [sortBy]: sortOrder },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-    ]);
+    const total = await (model.count({ where }) as Promise<number>);
+    const data = await (model.findMany({
+      where,
+      include,
+      orderBy: { [sortBy]: sortOrder },
+      skip: (page - 1) * limit,
+      take: limit,
+    }) as Promise<T[]>);
 
     return { data, total, page, limit };
   }
@@ -56,12 +54,12 @@ export class QueryOptimizationService {
    * Groups requests and fetches in parallel
    */
   async batchFetchByIds<T>(
-    model: any,
+    model: Record<string, (...args: unknown[]) => unknown>,
     ids: string[],
-    select: any,
+    select: unknown,
     options?: BatchFetchOptions,
   ): Promise<Map<string, T>> {
-    const chunkSize = options?.chunkSize || 100;
+    const chunkSize = options?.chunkSize ?? 100;
     const chunks: string[][] = [];
 
     for (let i = 0; i < ids.length; i += chunkSize) {
@@ -70,11 +68,12 @@ export class QueryOptimizationService {
 
     const results = new Map<string, T>();
 
-    const promises = chunks.map((chunk) =>
-      model.findMany({
-        where: { id: { in: chunk } },
-        select,
-      }),
+    const promises = chunks.map(
+      (chunk) =>
+        model.findMany({
+          where: { id: { in: chunk } },
+          select,
+        }) as Promise<Array<T & { id: string }>>,
     );
 
     const batchResults = await Promise.all(promises);
@@ -93,28 +92,28 @@ export class QueryOptimizationService {
    * Uses createMany for better performance
    */
   async batchCreate<T>(
-    model: any,
-    data: any[],
+    model: Record<string, (...args: unknown[]) => unknown>,
+    data: unknown[],
     options?: { skipDuplicates?: boolean },
   ): Promise<{ count: number; created: T[] }> {
     if (data.length === 0) {
       return { count: 0, created: [] };
     }
 
-    const result = await model.createMany({
+    const result = await (model.createMany({
       data,
-      skipDuplicates: options?.skipDuplicates || false,
-    });
+      skipDuplicates: options?.skipDuplicates ?? false,
+    }) as Promise<{ count: number }>);
 
-    return { count: result.count, created: data };
+    return { count: result.count, created: data as T[] };
   }
 
   /**
    * Batch update multiple records efficiently
    */
-  async batchUpdate<T>(
-    model: any,
-    updates: Array<{ where: any; data: any }>,
+  async batchUpdate(
+    model: Record<string, (...args: unknown[]) => unknown>,
+    updates: Array<{ where: unknown; data: unknown }>,
   ): Promise<{ count: number }> {
     if (updates.length === 0) {
       return { count: 0 };
@@ -123,7 +122,9 @@ export class QueryOptimizationService {
     let totalCount = 0;
 
     for (const update of updates) {
-      const result = await model.updateMany(update);
+      const result = await (model.updateMany(update) as Promise<{
+        count: number;
+      }>);
       totalCount += result.count;
     }
 
@@ -133,14 +134,17 @@ export class QueryOptimizationService {
   /**
    * Batch delete multiple records efficiently
    */
-  async batchDelete(model: any, ids: string[]): Promise<{ count: number }> {
+  async batchDelete(
+    model: Record<string, (...args: unknown[]) => unknown>,
+    ids: string[],
+  ): Promise<{ count: number }> {
     if (ids.length === 0) {
       return { count: 0 };
     }
 
-    const result = await model.deleteMany({
+    const result = await (model.deleteMany({
       where: { id: { in: ids } },
-    });
+    }) as Promise<{ count: number }>);
 
     return { count: result.count };
   }
@@ -150,18 +154,18 @@ export class QueryOptimizationService {
    * Prevents N+1 by fetching all related records at once
    */
   async fetchRelatedForMany<T>(
-    model: any,
+    model: Record<string, (...args: unknown[]) => unknown>,
     parentIds: string[],
     relationField: string,
-    select?: any,
+    select?: unknown,
   ): Promise<Map<string, T[]>> {
-    const records = await model.findMany({
+    const records = await (model.findMany({
       where: { id: { in: parentIds } },
       select: {
         id: true,
         [relationField]: { select },
       },
-    });
+    }) as Promise<Array<{ id: string } & Record<string, T[]>>>);
 
     const result = new Map<string, T[]>();
 
@@ -177,11 +181,11 @@ export class QueryOptimizationService {
    * Optimized for common search patterns
    */
   async search<T>(
-    model: any,
+    model: Record<string, (...args: unknown[]) => unknown>,
     query: string,
     searchFields: string[],
-    where?: any,
-    select?: any,
+    where?: unknown,
+    select?: unknown,
     limit = 10,
   ): Promise<T[]> {
     const conditions = searchFields.map((field) => ({
@@ -190,12 +194,12 @@ export class QueryOptimizationService {
 
     return model.findMany({
       where: {
-        ...where,
+        ...(where as object),
         OR: conditions,
       },
       select,
       take: limit,
-    });
+    }) as Promise<T[]>;
   }
 
   /**
@@ -203,31 +207,31 @@ export class QueryOptimizationService {
    * Groups and counts records
    */
   async aggregate(
-    model: any,
-    where: any,
+    model: Record<string, (...args: unknown[]) => unknown>,
+    where: unknown,
     groupBy: string[],
     countField = 'id',
-  ): Promise<any[]> {
+  ): Promise<unknown[]> {
     return model.groupBy({
       by: groupBy,
       where,
       _count: { [countField]: true },
-    });
+    }) as Promise<unknown[]>;
   }
 
   /**
    * Cursor-based pagination for large datasets
    * More efficient than offset/limit for deep pagination
    */
-  async fetchWithCursor<T>(
-    model: any,
-    where: any,
+  async fetchWithCursor<T extends Record<string, unknown>>(
+    model: Record<string, (...args: unknown[]) => unknown>,
+    where: unknown,
     options: {
-      cursor?: any;
+      cursor?: string;
       limit: number;
       sortBy?: string;
       sortOrder?: 'asc' | 'desc';
-      include?: any;
+      include?: unknown;
     },
   ): Promise<{ data: T[]; nextCursor: string | null }> {
     const {
@@ -238,17 +242,24 @@ export class QueryOptimizationService {
       include,
     } = options;
 
-    const data = await model.findMany({
+    const data = await (model.findMany({
       where,
-      take: limit + 1, // Fetch one extra to determine if there's a next page
+      take: limit + 1,
       ...(cursor && { skip: 1, cursor: { [sortBy]: cursor } }),
       orderBy: { [sortBy]: sortOrder },
       include,
-    });
+    }) as Promise<T[]>);
 
     const hasNextPage = data.length > limit;
     const items = hasNextPage ? data.slice(0, -1) : data;
-    const nextCursor = hasNextPage ? items[items.length - 1]?.[sortBy] : null;
+    const lastItem = items[items.length - 1];
+    const rawCursor = lastItem?.[sortBy];
+    const nextCursor =
+      hasNextPage && lastItem && rawCursor != null
+        ? typeof rawCursor === 'string' || typeof rawCursor === 'number'
+          ? String(rawCursor)
+          : null
+        : null;
 
     return { data: items, nextCursor };
   }
@@ -257,30 +268,39 @@ export class QueryOptimizationService {
    * Distinct query with filtering
    * Gets unique values of a field
    */
-  async findDistinct(model: any, field: string, where?: any): Promise<any[]> {
+  async findDistinct(
+    model: Record<string, (...args: unknown[]) => unknown>,
+    field: string,
+    where?: unknown,
+  ): Promise<unknown[]> {
     return model.findMany({
       distinct: [field],
       where,
       select: { [field]: true },
-    });
+    }) as Promise<unknown[]>;
   }
 
   /**
    * Count with filters
-   * Simple count query
    */
-  async count(model: any, where: any): Promise<number> {
-    return model.count({ where });
+  async count(
+    model: Record<string, (...args: unknown[]) => unknown>,
+    where: unknown,
+  ): Promise<number> {
+    return model.count({ where }) as Promise<number>;
   }
 
   /**
    * Check existence without fetching data
    */
-  async exists(model: any, where: any): Promise<boolean> {
-    const result = await model.findFirst({
+  async exists(
+    model: Record<string, (...args: unknown[]) => unknown>,
+    where: unknown,
+  ): Promise<boolean> {
+    const result = await (model.findFirst({
       where,
       select: { id: true },
-    });
+    }) as Promise<{ id: string } | null>);
     return !!result;
   }
 
@@ -289,68 +309,68 @@ export class QueryOptimizationService {
    * Ensures record exists before updating
    */
   async updateIfExists<T>(
-    model: any,
-    where: any,
-    data: any,
-    select?: any,
+    model: Record<string, (...args: unknown[]) => unknown>,
+    where: unknown,
+    data: unknown,
+    select?: unknown,
   ): Promise<T | null> {
     const exists = await this.exists(model, where);
     if (!exists) return null;
 
-    return model.update({ where, data, select });
+    return model.update({ where, data, select }) as Promise<T>;
   }
 
   /**
    * Soft delete by setting a timestamp
    */
   async softDelete(
-    model: any,
-    where: any,
+    model: Record<string, (...args: unknown[]) => unknown>,
+    where: unknown,
     dateField = 'deletedAt',
   ): Promise<{ count: number }> {
     return model.updateMany({
       where,
       data: { [dateField]: new Date() },
-    });
+    }) as Promise<{ count: number }>;
   }
 
   /**
    * Restore soft-deleted records
    */
   async restore(
-    model: any,
-    where: any,
+    model: Record<string, (...args: unknown[]) => unknown>,
+    where: unknown,
     dateField = 'deletedAt',
   ): Promise<{ count: number }> {
     return model.updateMany({
       where,
       data: { [dateField]: null },
-    });
+    }) as Promise<{ count: number }>;
   }
 
   /**
    * Upsert with optimized select
    */
   async upsert<T>(
-    model: any,
-    where: any,
-    createData: any,
-    updateData: any,
-    select?: any,
+    model: Record<string, (...args: unknown[]) => unknown>,
+    where: unknown,
+    createData: unknown,
+    updateData: unknown,
+    select?: unknown,
   ): Promise<T> {
     return model.upsert({
       where,
       create: createData,
       update: updateData,
       select,
-    });
+    }) as Promise<T>;
   }
 
   /**
    * Raw query execution with parameter binding
    * For complex queries beyond Prisma's capabilities
    */
-  async executeRaw<T = any>(query: Prisma.Sql): Promise<T[]> {
+  async executeRaw<T = unknown>(query: Prisma.Sql): Promise<T[]> {
     return this.prisma.$queryRaw(query);
   }
 }

@@ -26,7 +26,8 @@ export class CreatorSearchController {
 
   @Get()
   @ApiOperation({
-    summary: 'Creator personalized global search across products, orders, and discount codes',
+    summary:
+      'Creator personalized global search across products, orders, and discount codes',
     description:
       'Search across your own products, orders, and discount codes. Requires Creator authentication.',
   })

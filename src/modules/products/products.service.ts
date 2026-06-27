@@ -12,10 +12,7 @@ import {
   PRODUCT_BY_SLUG,
   PRODUCT_TTL,
 } from 'src/modules/shared/constants/cache.constant';
-import {
-  resolveCategoryIdFromPath,
-  buildCategoryPath,
-} from 'src/modules/shared/utils/category-path.util';
+import { resolveCategoryIdFromPath } from 'src/modules/shared/utils/category-path.util';
 import { getStockStatus } from 'src/modules/shared/utils/stock-status.util';
 import { normalizeOptions } from 'src/modules/shared/utils/variant-options.validator';
 import { computeVariantCombinations } from 'src/modules/shared/utils/variant-combinations.util';
@@ -1384,7 +1381,6 @@ export class ProductsService {
       );
     }
   }
-
 
   private async clearProductCache(slug: string, id?: string): Promise<void> {
     const keys = [`product:slug:${slug}`];

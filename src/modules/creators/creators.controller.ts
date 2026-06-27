@@ -138,7 +138,6 @@ export class CreatorsController {
     return null;
   }
 
-
   @Public()
   @StrictThrottle()
   @Post('auth/otp/request')

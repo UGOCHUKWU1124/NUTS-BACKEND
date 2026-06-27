@@ -79,14 +79,14 @@ export class ResponseInterceptor<T> implements NestInterceptor<
   intercept(
     context: ExecutionContext,
     next: CallHandler,
-  ): Observable<ApiResponseDto<T> | T> {
+  ): Observable<ApiResponseDto<T>> {
     const bypass = this.reflector.getAllAndOverride<boolean>(
       BYPASS_RESPONSE_INTERCEPTOR_KEY,
       [context.getHandler(), context.getClass()],
     );
 
     if (bypass) {
-      return next.handle();
+      return next.handle() as Observable<ApiResponseDto<T>>;
     }
 
     const message =
@@ -96,16 +96,16 @@ export class ResponseInterceptor<T> implements NestInterceptor<
       ]) || 'Request successful';
 
     return next.handle().pipe(
-      map((data: unknown): ApiResponseDto<T> | any => {
+      map((data: unknown): ApiResponseDto<T> => {
         const timestamp = new Date().toISOString();
 
         if (isApiResponseDto(data)) {
+          const existing = data as ApiResponseDto<T> & { timestamp?: string };
           return {
-            ...data,
-            timestamp: (data as any).timestamp || timestamp,
+            ...existing,
+            timestamp: existing.timestamp ?? timestamp,
           };
         }
-
 
         if (data === null || data === undefined) {
           return {
@@ -146,4 +146,3 @@ export class ResponseInterceptor<T> implements NestInterceptor<
     );
   }
 }
-

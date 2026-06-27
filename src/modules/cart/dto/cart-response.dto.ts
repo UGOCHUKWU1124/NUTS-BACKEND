@@ -1,5 +1,4 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import type { VariantCombinations } from 'src/modules/shared/dto/variant-combinations.dto';
 
 // ─── Shared building blocks for all cart response DTOs ───
 
@@ -81,7 +80,6 @@ export class CartItemProductCategoryDto {
   @ApiProperty() name!: string;
   @ApiProperty() slug!: string;
 }
-
 
 export class CartItemProductDto {
   @ApiProperty() id!: string;

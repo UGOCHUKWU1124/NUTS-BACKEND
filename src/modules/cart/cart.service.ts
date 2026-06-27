@@ -376,13 +376,14 @@ export class CartService {
     return variantId?.trim() || null;
   }
 
+  // Replace the entire problematic transformOptions method to use proper typing
   private transformOptions(
     options: unknown,
   ): { name: string; value: string }[] {
     if (!options) return [];
     // New DB format: already an array of { name, value, stock? }
     if (Array.isArray(options)) {
-      return (options as any[]).map((o) => ({
+      return (options as Array<{ name: string; value: string }>).map((o) => ({
         name: o.name,
         value: o.value,
       }));
@@ -474,9 +475,7 @@ export class CartService {
         variant: item.variant
           ? {
               id: item.variant.id,
-              options: this.transformOptions(
-                item.variant.options as Record<string, string>,
-              ),
+              options: this.transformOptions(item.variant.options),
               isActive: item.variant.isActive,
               isDeleted: item.variant.isDeleted,
             }

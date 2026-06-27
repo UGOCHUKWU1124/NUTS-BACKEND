@@ -45,7 +45,9 @@ export class AdminAuthService {
     if (!admin || !(await bcrypt.compare(dto.password, admin.password))) {
       this.logger.warn(`Failed login attempt for admin: ${dto.email}`);
       // Record failed attempt for brute-force protection
-      await this.accountLockService.recordFailedAttempt(identifier).catch(() => {});
+      await this.accountLockService
+        .recordFailedAttempt(identifier)
+        .catch(() => {});
       // Log failed login attempt
       await this.auditLog
         .log({

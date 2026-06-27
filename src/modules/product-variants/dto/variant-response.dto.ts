@@ -127,6 +127,9 @@ export class AllVariantsResponseDto {
   })
   data!: VariantSummaryDto[];
 
-  @ApiProperty({ description: 'Pagination metadata', type: () => PaginationMetaDto })
+  @ApiProperty({
+    description: 'Pagination metadata',
+    type: () => PaginationMetaDto,
+  })
   meta!: PaginationMetaDto;
 }
