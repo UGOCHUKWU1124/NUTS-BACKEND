@@ -69,7 +69,9 @@ export class CategoriesService {
     }
 
     const type = DEPTH_TO_TYPE[depth];
-    const slug = await this.resolveSlug(dto.slug ?? generateSlug(dto.name));
+    const slug = await this.resolveSlug(
+      dto.slug ? generateSlug(dto.slug) : generateSlug(dto.name),
+    );
 
     try {
       const category = await this.prisma.category.create({
@@ -473,7 +475,7 @@ export class CategoriesService {
     }
 
     if (dto.slug !== undefined) {
-      data.slug = await this.resolveSlug(dto.slug, id);
+      data.slug = await this.resolveSlug(generateSlug(dto.slug), id);
     } else if (dto.name !== undefined && existing.slug) {
       // If name changed and slug was auto-generated, let it be - keep existing slug
     }
