@@ -3,7 +3,6 @@ import {
   IsOptional,
   IsString,
   IsUUID,
-  Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -19,17 +18,15 @@ export class CreateCategoryDto {
 
   @ApiPropertyOptional({
     description:
-      'URL-friendly slug. Auto-generated from name if omitted. Lowercase letters, numbers, and hyphens only.',
+      'URL-friendly slug. Auto-generated from name if omitted. ' +
+      'Will be normalized (lowercased, spaces → hyphens, & → -and-, special chars stripped). ' +
+      'Lowercase letters, numbers, and hyphens only after normalization.',
     maxLength: 120,
   })
   @Trim()
   @IsOptional()
   @IsString()
   @MaxLength(120)
-  @Matches(/^[a-z0-9]+(-[a-z0-9]+)*$/, {
-    message:
-      'Slug must be lowercase and contain only letters, numbers, and hyphens (e.g. my-category)',
-  })
   slug?: string;
 
   @ApiPropertyOptional({ description: 'Category description', maxLength: 500 })
