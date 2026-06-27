@@ -6,6 +6,7 @@ export function generateSlug(text: string): string {
     .replace(/[\u0300-\u036f]/g, '') // Remove all previously split accents
     .toLowerCase()
     .trim()
+    .replace(/\s*&\s*/g, '-and-') // Convert & (with optional surrounding spaces) to -and-
     .replace(/[^a-z0-9 -]/g, '') // Remove all non-word characters
     .replace(/\s+/g, '-') // Replace spaces with hyphens
     .replace(/-+/g, '-') // Replace multiple consecutive hyphens with a single hyphen
