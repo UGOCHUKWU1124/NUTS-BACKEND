@@ -12,6 +12,7 @@ import { UsersModule } from 'src/modules/users/users.module';
 import { DiscountCodeModule } from 'src/modules/promotions/discount-code.module';
 import { ReferralModule } from 'src/modules/referral/referral.module';
 import { AuthSessionService } from './services/auth-session.service';
+import { SecurityModule } from 'src/modules/security/security.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { AuthSessionService } from './services/auth-session.service';
     UsersModule,
     DiscountCodeModule,
     ReferralModule,
+    SecurityModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       inject: [ConfigService],

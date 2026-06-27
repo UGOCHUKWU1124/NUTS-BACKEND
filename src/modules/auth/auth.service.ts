@@ -13,6 +13,7 @@ import { LoginDto } from './dto/login.dto';
 import { AuthUserDto } from './dto/auth-response.dto';
 import { DiscountCodeService } from 'src/modules/promotions/discount-code.service';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { AccountLockService } from 'src/modules/security/services/account-lock.service';
 
 /** Minimal user data returned in the login/registration/refresh response. */
 type AuthUserData = {
@@ -55,6 +56,7 @@ export class AuthService {
     private readonly emailService: EmailService,
     private readonly auditLog: AuditLogService,
     private readonly referralService: ReferralService,
+    private readonly accountLockService: AccountLockService,
   ) {}
 
   async register(
@@ -65,18 +67,19 @@ export class AuthService {
     const { email, password, firstName, lastName, phone, shippingAddress } =
       dto;
 
-    // Validate referral code before anything is created — store result to avoid re-fetch
+    // Check for duplicate email first — short-circuit before any expensive operations
+    const exists = await this.prisma.user.findUnique({ where: { email } });
+    if (exists) {
+      throw new ConflictException('User already exists');
+    }
+
+    // Validate referral code after confirming the email is new
     let validatedReferral: { id: string; userId: string } | null = null;
     if (dto.referralCode) {
       validatedReferral = await this.referralService.validateReferralCode(
         dto.referralCode,
         email,
       );
-    }
-
-    const exists = await this.prisma.user.findUnique({ where: { email } });
-    if (exists) {
-      throw new ConflictException('User already exists');
     }
 
     await this.otpService.verifyOtp(email, dto.otpCode);
@@ -151,6 +154,8 @@ export class AuthService {
     ipAddress?: string,
     userAgent?: string,
   ): Promise<AuthSession> {
+    const identifier = `email:${dto.email.toLowerCase().trim()}`;
+
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
       select: {
@@ -161,6 +166,8 @@ export class AuthService {
     });
 
     if (!user || !(await bcrypt.compare(dto.password, user.password))) {
+      // Record failed attempt for brute-force protection
+      await this.accountLockService.recordFailedAttempt(identifier).catch(() => {});
       // Log failed login attempt
       await this.auditLog
         .log({
@@ -178,6 +185,9 @@ export class AuthService {
     if (!user.isActive) {
       throw new UnauthorizedException('Account is deactivated');
     }
+
+    // Successful login — reset brute-force counter
+    await this.accountLockService.resetAttempts(identifier).catch(() => {});
 
     const userData: AuthUserData = {
       id: user.id,
@@ -204,10 +214,11 @@ export class AuthService {
   async refresh(userId: string): Promise<AuthSession> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: this.userSelect,
+      select: { isActive: true, ...this.userSelect },
     });
 
     if (!user) throw new UnauthorizedException('User not found');
+    if (!user.isActive) throw new UnauthorizedException('Account is deactivated');
 
     return this.issueSession(user);
   }

@@ -18,6 +18,7 @@ import { ReferralService } from 'src/modules/referral/referral.service';
 import { generateStatusNote } from 'src/modules/orders/constants/order-status.constants';
 import { DomainEvents } from 'src/modules/shared/events/domain-events';
 import type { OrderProcessingPayload } from 'src/modules/shared/events/event-payloads';
+import { CREATOR_COMMISSION_RATE } from 'src/modules/shared/constants/commission.constants';
 import {
   PAYSTACK_SUCCESS_STATUS,
   PAYSTACK_TRANSACTION_INI_URL,
@@ -343,7 +344,7 @@ export class PaymentsService {
           for (const item of order.orderItems) {
             const earning = new Prisma.Decimal(
               Number(
-                (Number(item.unitPrice) * item.quantity * 0.85).toFixed(2),
+                (Number(item.unitPrice) * item.quantity * CREATOR_COMMISSION_RATE).toFixed(2),
               ),
             );
             const existing =
@@ -454,7 +455,7 @@ export class PaymentsService {
           for (const item of orderWithItems.orderItems) {
             const earning = new Prisma.Decimal(
               Number(
-                (Number(item.unitPrice) * item.quantity * 0.85).toFixed(2),
+                (Number(item.unitPrice) * item.quantity * CREATOR_COMMISSION_RATE).toFixed(2),
               ),
             );
             const existing =
