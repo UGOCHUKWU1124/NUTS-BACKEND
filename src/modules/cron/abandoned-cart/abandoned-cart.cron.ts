@@ -116,6 +116,13 @@ export class AbandonedCartCron {
     });
 
     for (const cart of secondReminderCarts) {
+      // Only send second reminder if the first one was already sent.
+      // A cart inactive for > 24 h also satisfies the first-reminder threshold,
+      // so without this guard both reminders would fire in the same cron run.
+      const firstSentKey = `cart:reminder:${cart.id}:first`;
+      const firstWasSent = await this.redis.get(firstSentKey);
+      if (!firstWasSent) continue;
+
       const dedupKey = `cart:reminder:${cart.id}:second`;
       const alreadySent = await this.redis.get(dedupKey);
       if (alreadySent) continue;
