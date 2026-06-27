@@ -22,11 +22,11 @@ import { ProductsModule } from './modules/products/products.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ProductVariantsModule } from './modules/product-variants/product-variants.module';
 import { CreatorsModule } from './modules/creators/creators.module';
-import { WishlistModule } from 'src/modules/wishlist/wishlist.module';
-import { ReviewsModule } from 'src/modules/reviews/reviews.module';
-import { WalletModule } from 'src/modules/wallet/wallet.module';
-import { ReferralModule } from 'src/modules/referral/referral.module';
-import { ShippingAddressesModule } from 'src/modules/shipping-addresses/shipping-addresses.module';
+import { WishlistModule } from './modules/wishlist/wishlist.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
+import { WalletModule } from './modules/wallet/wallet.module';
+import { ReferralModule } from './modules/referral/referral.module';
+import { ShippingAddressesModule } from './modules/shipping-addresses/shipping-addresses.module';
 import { HealthModule } from './modules/health/health.module';
 
 import { AdminUsersModule } from './modules/admin/manage-user/admin-user.module';
@@ -40,8 +40,8 @@ import { AdminCacheModule } from './modules/admin/manage-cache/admin-cache.modul
 import { AdminCategoryModule } from './modules/admin/manage-category/admin-category.module';
 import { AdminPromotionModule } from './modules/admin/manage-promotions/admin-promotion.module';
 import { SearchModule } from './modules/search/search.module';
-import { AuditLogModule } from 'src/modules/shared/audit-log/audit-log.module';
-import { UploadModule } from 'src/modules/shared/upload/upload.module';
+import { AuditLogModule } from './modules/shared/audit-log/audit-log.module';
+import { UploadModule } from './modules/shared/upload/upload.module';
 
 // ── Priority 2 Infrastructure Modules ────────────────────
 import { QueueModule } from './modules/queue/queue.module';

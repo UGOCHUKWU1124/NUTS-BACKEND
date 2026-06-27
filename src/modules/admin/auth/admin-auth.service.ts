@@ -17,6 +17,7 @@ import { AdminAuthUserDto } from './dto/admin-auth-user.dto';
 import { AuthTokens } from 'src/modules/auth/auth-cookie.service';
 import { ROLE } from '@prisma/client';
 import { BCRYPT_SALT_ROUNDS } from 'src/modules/shared/constants/bcrypt.constants';
+import { AccountLockService } from 'src/modules/security/services/account-lock.service';
 
 @Injectable()
 export class AdminAuthService {
@@ -27,6 +28,7 @@ export class AdminAuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly auditLog: AuditLogService,
+    private readonly accountLockService: AccountLockService,
   ) {}
 
   async login(
@@ -34,12 +36,16 @@ export class AdminAuthService {
     ipAddress?: string,
     userAgent?: string,
   ): Promise<{ user: AdminAuthUserDto; tokens: AuthTokens }> {
+    const identifier = `email:${dto.email.toLowerCase().trim()}`;
+
     const admin = await this.prisma.admin.findUnique({
       where: { email: dto.email },
     });
 
     if (!admin || !(await bcrypt.compare(dto.password, admin.password))) {
       this.logger.warn(`Failed login attempt for admin: ${dto.email}`);
+      // Record failed attempt for brute-force protection
+      await this.accountLockService.recordFailedAttempt(identifier).catch(() => {});
       // Log failed login attempt
       await this.auditLog
         .log({
@@ -57,6 +63,9 @@ export class AdminAuthService {
     if (!admin.isActive) {
       throw new UnauthorizedException('Admin account is deactivated');
     }
+
+    // Successful login — reset brute-force counter
+    await this.accountLockService.resetAttempts(identifier).catch(() => {});
 
     const session = await this.issueSession(admin);
 

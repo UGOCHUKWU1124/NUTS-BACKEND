@@ -43,6 +43,7 @@ import {
   CreatorJwtAuthGuard,
   CreatorRefreshGuard,
 } from './guards/creator-auth.guard';
+import { AccountLockGuard } from 'src/modules/security/guards/account-lock.guard';
 import { ApiResponseDto } from 'src/modules/shared/dto/api-response.dto';
 
 @ApiTags('CREATORS - AUTH')
@@ -86,6 +87,7 @@ export class CreatorsController {
   @Public()
   @Post('auth/login')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(AccountLockGuard)
   @Message('Login successful')
   @ApiOperation({
     summary: 'Creator login',

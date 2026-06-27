@@ -161,6 +161,12 @@ export class EnvironmentVariables {
   @IsOptional()
   ADMIN_SETUP_SECRET?: string;
 
+  // ─── Checkout ────────────────────────────────────────────────────────────────
+
+  @IsString()
+  @IsOptional()
+  CHECKOUT_REVALIDATE_PRICES: string = 'true';
+
   // ─── Dev / Tooling ───────────────────────────────────────────────────────────
 
   @Type(() => Boolean)

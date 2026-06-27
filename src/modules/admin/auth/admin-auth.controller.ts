@@ -40,6 +40,7 @@ import {
   extractUserAgent,
 } from 'src/modules/shared/utils/request.util';
 import { ApiResponseDto } from 'src/modules/shared/dto/api-response.dto';
+import { AccountLockGuard } from 'src/modules/security/guards/account-lock.guard';
 
 
 @ApiTags('ADMIN - AUTH')
@@ -52,6 +53,7 @@ export class AdminAuthController {
 
   @Public()
   @StrictThrottle()
+  @UseGuards(AccountLockGuard)
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @Message('Admin logged in successfully')

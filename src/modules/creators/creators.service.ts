@@ -29,11 +29,13 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { BCRYPT_SALT_ROUNDS } from 'src/modules/shared/constants/bcrypt.constants';
 import { randomBytes } from 'crypto';
+import type { StringValue } from 'ms';
 import { generateSlug } from 'src/modules/shared/utils/slug.util';
 import { AuthTokens } from 'src/modules/auth/auth-cookie.service';
 import { OtpService } from 'src/modules/auth/services/otp.service';
 import { EmailService } from 'src/modules/infrastructure/mail/email.service';
 import { CreatorResetPasswordDto } from './dto/creator-reset-password.dto';
+import { AccountLockService } from 'src/modules/security/services/account-lock.service';
 
 const creatorSelect = {
   id: true,
@@ -77,6 +79,7 @@ export class CreatorsService {
     private readonly emailService: EmailService,
     private readonly auditLog: AuditLogService,
     private readonly cacheService: CacheService,
+    private readonly accountLockService: AccountLockService,
   ) {}
 
   async register(
@@ -161,6 +164,7 @@ export class CreatorsService {
     ipAddress?: string,
     userAgent?: string,
   ): Promise<CreatorSession> {
+    const identifier = `email:${dto.email.toLowerCase().trim()}`;
     const loginSelect = {
       ...this.creatorSelect,
       password: true,
@@ -172,6 +176,8 @@ export class CreatorsService {
     });
 
     if (!creator || !(await bcrypt.compare(dto.password, creator.password))) {
+      // Record failed attempt for brute-force protection
+      await this.accountLockService.recordFailedAttempt(identifier).catch(() => {});
       // Log failed login attempt
       await this.auditLog
         .log({
@@ -193,6 +199,9 @@ export class CreatorsService {
     if (!creator.isApproved) {
       throw new UnauthorizedException('Creator account is not approved yet');
     }
+
+    // Successful login — reset brute-force counter
+    await this.accountLockService.resetAttempts(identifier).catch(() => {});
 
     const tokens = await this.generateTokens(creator.id, creator.email);
     await this.storeRefreshToken(
@@ -664,6 +673,14 @@ export class CreatorsService {
       throw new UnauthorizedException('Creator not found');
     }
 
+    if (!creator.isActive) {
+      throw new UnauthorizedException('Creator account is deactivated');
+    }
+
+    if (!creator.isApproved) {
+      throw new UnauthorizedException('Creator account is not approved yet');
+    }
+
     const tokens = await this.generateTokens(creator.id, creator.email);
     await this.storeRefreshToken(
       creator.id,
@@ -687,7 +704,7 @@ export class CreatorsService {
       { sub: creatorId, email, type: 'creator' },
       {
         secret: this.configService.getOrThrow('JWT_SECRET'),
-        expiresIn: '15m',
+        expiresIn: this.configService.getOrThrow<string>('JWT_ACCESS_EXPIRES_IN') as StringValue,
       },
     );
 
@@ -695,7 +712,7 @@ export class CreatorsService {
       { sub: creatorId, email, refreshId, type: 'creator' },
       {
         secret: this.configService.getOrThrow('JWT_REFRESH_SECRET'),
-        expiresIn: '7d',
+        expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d') as StringValue,
       },
     );
 

@@ -34,6 +34,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { JwtAuthGuard } from 'src/modules/shared/guards/jwt-auth.guard';
+import { AccountLockGuard } from 'src/modules/security/guards/account-lock.guard';
 
 import { Message } from 'src/modules/shared/decorators/message.decorator';
 import { Public } from 'src/modules/shared/decorators/public.decorator';
@@ -87,6 +88,7 @@ export class AuthController {
 
   @Public()
   @StrictThrottle()
+  @UseGuards(AccountLockGuard)
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @Message('Logged in successfully')

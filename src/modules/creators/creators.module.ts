@@ -8,6 +8,7 @@ import { ProductsModule } from 'src/modules/products/products.module';
 import { DiscountCodeModule } from 'src/modules/promotions/discount-code.module';
 import { WalletModule } from 'src/modules/wallet/wallet.module';
 import { PrismaModule } from 'src/modules/infrastructure/prisma/prisma.module';
+import { SecurityModule } from 'src/modules/security/security.module';
 import { CreatorAnalyticsService } from 'src/modules/analytics/creators/creator-analytics.service';
 import { CreatorAnalyticsController } from 'src/modules/analytics/creators/creator-analytics.controller';
 import { PublicStoreController } from './public-store.controller';
@@ -31,6 +32,7 @@ import { CreatorRefreshTokenStrategy } from './strategies/creator-refresh-token.
     PrismaModule,
     ProductVariantsModule,
     ProductsModule,
+    SecurityModule,
     WalletModule,
   ],
   controllers: [
