@@ -93,6 +93,76 @@ export class CategoriesService {
   }
 
   // ─────────────────────────────────────────────
+  // GET TREE (admin — includes inactive nodes)
+  // ─────────────────────────────────────────────
+
+  async getAdminTree(): Promise<CategoryResponseDto[]> {
+    const all = await this.prisma.category.findMany({
+      orderBy: { name: 'asc' },
+    });
+
+    const roots = all.filter(
+      (c) => c.parentId === null && c.type === CategoryType.Category,
+    );
+    return roots.map((root) => this.toCategoryResponse(root, all));
+  }
+
+  // ─────────────────────────────────────────────
+  // FIND BY SLUG (admin — includes inactive nodes)
+  // ─────────────────────────────────────────────
+
+  async findBySlugAdmin(
+    slug: string,
+  ): Promise<
+    CategoryResponseDto | ParentsubcategoryResponseDto | SubcategoryResponseDto
+  > {
+    const category = await this.prisma.category.findUnique({ where: { slug } });
+
+    if (!category) {
+      throw new NotFoundException('Category not found');
+    }
+
+    if (category.type === CategoryType.Subcategory) {
+      return this.toSubcategory(category);
+    }
+
+    // Load all descendants (active and inactive) for full nested response
+    const children = await this.prisma.category.findMany({
+      where: { parentId: category.id },
+      orderBy: { name: 'asc' },
+    });
+
+    if (category.type === CategoryType.Parentsubcategory) {
+      return {
+        id: category.id,
+        name: category.name,
+        slug: category.slug,
+        description: category.description,
+        imageUrl: category.imageUrl,
+        type: CategoryType.Parentsubcategory,
+        depth: category.depth,
+        isActive: category.isActive,
+        parentId: category.parentId,
+        createdAt: category.createdAt,
+        updatedAt: category.updatedAt,
+        subCategory: children
+          .filter((c) => c.type === CategoryType.Subcategory)
+          .map((c) => this.toSubcategory(c)),
+      };
+    }
+
+    // Category — need grandchildren too
+    const grandchildren = children.length
+      ? await this.prisma.category.findMany({
+          where: { parentId: { in: children.map((c) => c.id) } },
+          orderBy: { name: 'asc' },
+        })
+      : [];
+
+    return this.toCategoryResponse(category, [...children, ...grandchildren]);
+  }
+
+  // ─────────────────────────────────────────────
   // GET TREE
   // ─────────────────────────────────────────────
 
