@@ -635,20 +635,20 @@ export class OrdersService {
             if (item.variantId) {
               // Restore variant stock by incrementing directly
               const v = await tx.productVariant.findFirst({
-                where: { id: item.variantId! },
+                where: { id: item.variantId },
                 select: { id: true, stock: true, productId: true },
               });
               if (v) {
                 const oldStock = v.stock;
                 const newStock = v.stock + item.quantity;
                 await tx.productVariant.update({
-                  where: { id: item.variantId! },
+                  where: { id: item.variantId },
                   data: { stock: newStock },
                 });
                 await tx.stockHistory.create({
                   data: {
                     productId: v.productId,
-                    variantId: item.variantId!,
+                    variantId: item.variantId,
                     adjustment: item.quantity,
                     oldStockQuantity: oldStock,
                     newStockQuantity: newStock,
@@ -727,7 +727,11 @@ export class OrdersService {
           for (const item of current.orderItems) {
             const earning = new Prisma.Decimal(
               Number(
-                (Number(item.unitPrice) * item.quantity * CREATOR_COMMISSION_RATE).toFixed(2),
+                (
+                  Number(item.unitPrice) *
+                  item.quantity *
+                  CREATOR_COMMISSION_RATE
+                ).toFixed(2),
               ),
             );
             const existing =
@@ -751,7 +755,11 @@ export class OrdersService {
           for (const item of current.orderItems) {
             const earning = new Prisma.Decimal(
               Number(
-                (Number(item.unitPrice) * item.quantity * CREATOR_COMMISSION_RATE).toFixed(2),
+                (
+                  Number(item.unitPrice) *
+                  item.quantity *
+                  CREATOR_COMMISSION_RATE
+                ).toFixed(2),
               ),
             );
             const existing =
@@ -1385,7 +1393,9 @@ export class OrdersService {
         : null,
       items: order.orderItems.map((item) => ({
         productId: item.productId,
-        productSku: (item.productSnapshot as any)?.sku ?? item.product.sku,
+        productSku:
+          (item.productSnapshot as { sku?: string } | null)?.sku ??
+          item.product.sku,
         quantity: item.quantity,
         unitPrice: Number(item.unitPrice),
         totalPrice: Number(item.totalPrice),

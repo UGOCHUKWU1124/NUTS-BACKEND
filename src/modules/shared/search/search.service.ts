@@ -1,8 +1,73 @@
 import { Injectable, Inject, Logger, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/modules/infrastructure/prisma/prisma.service';
+
+// ── Raw query result row types ────────────────────────────────────────────────
+
+interface ProductRow {
+  id: string;
+  name: string;
+  sku: string;
+  score: number | string;
+  total_count: number;
+}
+
+interface CreatorRow {
+  id: string;
+  storeName: string;
+  storeDescription: string | null;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  score: number | string;
+  total_count: number;
+}
+
+interface CategoryRow {
+  id: string;
+  name: string;
+  description: string | null;
+  slug: string;
+  score: number | string;
+  total_count: number;
+}
+
+interface UserRow {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  referralCode: string | null;
+  score: number | string;
+  total_count: number;
+}
+
+interface OrderRow {
+  id: string;
+  orderNumber: string;
+  status: string;
+  discountCode: string | null;
+  referralCode: string | null;
+  shippingAddress: string | null;
+  userEmail: string | null;
+  score: number | string;
+  total_count: number;
+}
+
+interface DiscountCodeRow {
+  id: string;
+  code: string;
+  description: string | null;
+  score: number | string;
+  total_count: number;
+}
+
+interface IdScoreRow {
+  id: string;
+  total_count: number;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export type SearchIndex =
   | 'products'
@@ -80,14 +145,15 @@ export class SearchService implements OnModuleInit {
   private readonly cacheTtlSeconds = 900;
 
   constructor(
-    private readonly config: ConfigService,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   async onModuleInit() {
     try {
-      await this.prisma.$executeRawUnsafe('CREATE EXTENSION IF NOT EXISTS pg_trgm;');
+      await this.prisma.$executeRawUnsafe(
+        'CREATE EXTENSION IF NOT EXISTS pg_trgm;',
+      );
       this.logger.log('pg_trgm extension initialized successfully');
     } catch (error) {
       this.logger.error('Failed to initialize pg_trgm extension', error);
@@ -114,9 +180,9 @@ export class SearchService implements OnModuleInit {
     const similarityThreshold = 0.25;
     const offset = (page - 1) * limit;
 
-    let products: any[];
+    let products: IdScoreRow[];
     if (categoryId) {
-      products = await this.prisma.$queryRaw<any[]>`
+      products = await this.prisma.$queryRaw<IdScoreRow[]>`
         SELECT id,
           (CASE 
             WHEN name ILIKE ${ilikeSearch} THEN 2.0 + similarity(name, ${search})
@@ -135,7 +201,7 @@ export class SearchService implements OnModuleInit {
         LIMIT ${limit} OFFSET ${offset};
       `;
     } else {
-      products = await this.prisma.$queryRaw<any[]>`
+      products = await this.prisma.$queryRaw<IdScoreRow[]>`
         SELECT id,
           (CASE 
             WHEN name ILIKE ${ilikeSearch} THEN 2.0 + similarity(name, ${search})
@@ -187,7 +253,7 @@ export class SearchService implements OnModuleInit {
     const similarityThreshold = 0.25;
     const offset = (page - 1) * limit;
 
-    const matchedProducts = await this.prisma.$queryRaw<any[]>`
+    const matchedProducts = await this.prisma.$queryRaw<IdScoreRow[]>`
       SELECT id,
         (CASE 
           WHEN name ILIKE ${ilikeSearch} THEN 2.0 + similarity(name, ${search})
@@ -250,7 +316,7 @@ export class SearchService implements OnModuleInit {
     const productMap = new Map(products.map((p) => [p.id, p]));
     const orderedProducts = ids
       .map((id) => productMap.get(id))
-      .filter((p): p is typeof products[number] => !!p);
+      .filter((p): p is (typeof products)[number] => !!p);
 
     const hits = orderedProducts.map((product) => ({
       type: 'product',
@@ -317,8 +383,8 @@ export class SearchService implements OnModuleInit {
     const indexes: SearchIndex[] =
       types && types.length
         ? types.filter((type) =>
-          ['products', 'creators', 'categories'].includes(type),
-        )
+            ['products', 'creators', 'categories'].includes(type),
+          )
         : ['products', 'creators', 'categories'];
 
     return this.executeSearch(indexes, search, page, limit);
@@ -337,14 +403,14 @@ export class SearchService implements OnModuleInit {
     const indexes: SearchIndex[] =
       types && types.length
         ? types.filter((type) =>
-          [
-            'users',
-            'creators',
-            'products',
-            'orders',
-            'discount_codes',
-          ].includes(type),
-        )
+            [
+              'users',
+              'creators',
+              'products',
+              'orders',
+              'discount_codes',
+            ].includes(type),
+          )
         : ['users', 'creators', 'products', 'orders', 'discount_codes'];
 
     return this.executeSearch(indexes, search, page, limit);
@@ -362,8 +428,8 @@ export class SearchService implements OnModuleInit {
     const indexes: SearchIndex[] =
       types && types.length
         ? types.filter((type) =>
-          ['products', 'creators', 'categories'].includes(type),
-        )
+            ['products', 'creators', 'categories'].includes(type),
+          )
         : ['products', 'creators', 'categories'];
 
     const cacheKey = `search:autocomplete:${indexes.sort().join(',')}:${search}:${limit}`;
@@ -459,7 +525,7 @@ export class SearchService implements OnModuleInit {
     const ilikeSearch = `%${search}%`;
     const similarityThreshold = 0.25;
 
-    const matchedProducts = await this.prisma.$queryRaw<any[]>`
+    const matchedProducts = await this.prisma.$queryRaw<ProductRow[]>`
       SELECT id, name, sku,
         (CASE 
           WHEN name ILIKE ${ilikeSearch} THEN 2.0 + similarity(name, ${search})
@@ -478,7 +544,8 @@ export class SearchService implements OnModuleInit {
       LIMIT ${limit};
     `;
 
-    const total = matchedProducts.length > 0 ? matchedProducts[0].total_count : 0;
+    const total =
+      matchedProducts.length > 0 ? matchedProducts[0].total_count : 0;
     const items = matchedProducts.map((product) => ({
       id: product.id,
       index: 'products' as const,
@@ -503,7 +570,7 @@ export class SearchService implements OnModuleInit {
     const ilikeSearch = `%${search}%`;
     const similarityThreshold = 0.25;
 
-    const matchedCreators = await this.prisma.$queryRaw<any[]>`
+    const matchedCreators = await this.prisma.$queryRaw<CreatorRow[]>`
       SELECT id, "storeName", "storeDescription", email, "firstName", "lastName",
         (CASE 
           WHEN "storeName" ILIKE ${ilikeSearch} THEN 3.0 + similarity("storeName", ${search})
@@ -528,13 +595,14 @@ export class SearchService implements OnModuleInit {
       LIMIT ${limit};
     `;
 
-    const total = matchedCreators.length > 0 ? matchedCreators[0].total_count : 0;
+    const total =
+      matchedCreators.length > 0 ? matchedCreators[0].total_count : 0;
     const items = matchedCreators.map((creator) => ({
       id: creator.id,
       index: 'creators' as const,
       type: 'creator',
       title: creator.storeName,
-      subtitle: creator.storeDescription,
+      subtitle: creator.storeDescription ?? undefined,
       score: Number(creator.score),
       payload: {
         id: creator.id,
@@ -556,7 +624,7 @@ export class SearchService implements OnModuleInit {
     const ilikeSearch = `%${search}%`;
     const similarityThreshold = 0.25;
 
-    const matchedCategories = await this.prisma.$queryRaw<any[]>`
+    const matchedCategories = await this.prisma.$queryRaw<CategoryRow[]>`
       SELECT id, name, description, slug,
         (CASE 
           WHEN name ILIKE ${ilikeSearch} THEN 2.0 + similarity(name, ${search})
@@ -577,7 +645,8 @@ export class SearchService implements OnModuleInit {
       LIMIT ${limit};
     `;
 
-    const total = matchedCategories.length > 0 ? matchedCategories[0].total_count : 0;
+    const total =
+      matchedCategories.length > 0 ? matchedCategories[0].total_count : 0;
     const items = matchedCategories.map((category) => ({
       id: category.id,
       index: 'categories' as const,
@@ -603,7 +672,7 @@ export class SearchService implements OnModuleInit {
     const ilikeSearch = `%${search}%`;
     const similarityThreshold = 0.25;
 
-    const matchedUsers = await this.prisma.$queryRaw<any[]>`
+    const matchedUsers = await this.prisma.$queryRaw<UserRow[]>`
       SELECT u.id, u.email, u."firstName", u."lastName", rc.code as "referralCode",
         (CASE 
           WHEN u.email ILIKE ${ilikeSearch} THEN 3.0 + similarity(u.email, ${search})
@@ -652,7 +721,7 @@ export class SearchService implements OnModuleInit {
     const ilikeSearch = `%${search}%`;
     const similarityThreshold = 0.25;
 
-    const matchedOrders = await this.prisma.$queryRaw<any[]>`
+    const matchedOrders = await this.prisma.$queryRaw<OrderRow[]>`
       SELECT o.id, o."orderNumber", o.status, o."discountCode", o."referralCode", o."shippingAddress", u.email as "userEmail",
         (CASE 
           WHEN o."orderNumber" ILIKE ${ilikeSearch} THEN 3.0 + similarity(o."orderNumber", ${search})
@@ -706,7 +775,7 @@ export class SearchService implements OnModuleInit {
     const ilikeSearch = `%${search}%`;
     const similarityThreshold = 0.25;
 
-    const matchedDiscountCodes = await this.prisma.$queryRaw<any[]>`
+    const matchedDiscountCodes = await this.prisma.$queryRaw<DiscountCodeRow[]>`
       SELECT id, code, description,
         (CASE 
           WHEN code ILIKE ${ilikeSearch} THEN 2.0 + similarity(code, ${search})
@@ -724,7 +793,8 @@ export class SearchService implements OnModuleInit {
       LIMIT ${limit};
     `;
 
-    const total = matchedDiscountCodes.length > 0 ? matchedDiscountCodes[0].total_count : 0;
+    const total =
+      matchedDiscountCodes.length > 0 ? matchedDiscountCodes[0].total_count : 0;
     const items = matchedDiscountCodes.map((discountCode) => ({
       id: discountCode.id,
       index: 'discount_codes' as const,
@@ -756,8 +826,8 @@ export class SearchService implements OnModuleInit {
     const indexes: SearchIndex[] =
       types && types.length
         ? types.filter((type) =>
-          ['products', 'orders', 'discount_codes'].includes(type),
-        )
+            ['products', 'orders', 'discount_codes'].includes(type),
+          )
         : ['products', 'orders', 'discount_codes'];
 
     return this.executeCreatorSearch(creatorId, indexes, search, page, limit);
@@ -776,8 +846,8 @@ export class SearchService implements OnModuleInit {
     const indexes: SearchIndex[] =
       types && types.length
         ? types.filter((type) =>
-          ['products', 'orders', 'discount_codes'].includes(type),
-        )
+            ['products', 'orders', 'discount_codes'].includes(type),
+          )
         : ['products', 'orders', 'discount_codes'];
 
     const cacheKey = `search:creator:${creatorId}:autocomplete:${indexes.sort().join(',')}:${search}:${limit}`;
@@ -786,7 +856,13 @@ export class SearchService implements OnModuleInit {
       return JSON.parse(cached) as SearchResultItem[];
     }
 
-    const result = await this.executeCreatorSearch(creatorId, indexes, search, 1, limit);
+    const result = await this.executeCreatorSearch(
+      creatorId,
+      indexes,
+      search,
+      1,
+      limit,
+    );
     if (!result) {
       return null;
     }
@@ -816,7 +892,9 @@ export class SearchService implements OnModuleInit {
 
     const searchLimit = page * limit;
     const results = await Promise.all(
-      indexes.map((index) => this.searchCreatorIndex(creatorId, index, search, searchLimit)),
+      indexes.map((index) =>
+        this.searchCreatorIndex(creatorId, index, search, searchLimit),
+      ),
     );
 
     const total = results.reduce((sum, entry) => sum + entry.total, 0);
@@ -870,7 +948,7 @@ export class SearchService implements OnModuleInit {
     const ilikeSearch = `%${search}%`;
     const similarityThreshold = 0.25;
 
-    const matchedProducts = await this.prisma.$queryRaw<any[]>`
+    const matchedProducts = await this.prisma.$queryRaw<ProductRow[]>`
       SELECT id, name, sku,
         (CASE 
           WHEN name ILIKE ${ilikeSearch} THEN 2.0 + similarity(name, ${search})
@@ -892,7 +970,8 @@ export class SearchService implements OnModuleInit {
       LIMIT ${limit};
     `;
 
-    const total = matchedProducts.length > 0 ? matchedProducts[0].total_count : 0;
+    const total =
+      matchedProducts.length > 0 ? matchedProducts[0].total_count : 0;
     const items = matchedProducts.map((product) => ({
       id: product.id,
       index: 'products' as const,
@@ -918,7 +997,7 @@ export class SearchService implements OnModuleInit {
     const ilikeSearch = `%${search}%`;
     const similarityThreshold = 0.25;
 
-    const matchedOrders = await this.prisma.$queryRaw<any[]>`
+    const matchedOrders = await this.prisma.$queryRaw<OrderRow[]>`
       WITH unique_orders AS (
         SELECT DISTINCT o.id, o."orderNumber", o.status, o."discountCode", o."referralCode", o."shippingAddress", u.email as "userEmail", o."createdAt"
         FROM orders o
@@ -979,7 +1058,7 @@ export class SearchService implements OnModuleInit {
     const ilikeSearch = `%${search}%`;
     const similarityThreshold = 0.25;
 
-    const matchedDiscountCodes = await this.prisma.$queryRaw<any[]>`
+    const matchedDiscountCodes = await this.prisma.$queryRaw<DiscountCodeRow[]>`
       SELECT id, code, description,
         (CASE 
           WHEN code ILIKE ${ilikeSearch} THEN 2.0 + similarity(code, ${search})
@@ -998,7 +1077,8 @@ export class SearchService implements OnModuleInit {
       LIMIT ${limit};
     `;
 
-    const total = matchedDiscountCodes.length > 0 ? matchedDiscountCodes[0].total_count : 0;
+    const total =
+      matchedDiscountCodes.length > 0 ? matchedDiscountCodes[0].total_count : 0;
     const items = matchedDiscountCodes.map((discountCode) => ({
       id: discountCode.id,
       index: 'discount_codes' as const,

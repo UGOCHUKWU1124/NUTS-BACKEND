@@ -69,7 +69,7 @@ export class AuditLogService {
           userAgent: params.userAgent,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error({ err: error }, 'Audit log creation failed');
     }
   }

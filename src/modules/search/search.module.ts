@@ -7,6 +7,10 @@ import { PrismaModule } from 'src/modules/infrastructure/prisma/prisma.module';
 
 @Module({
   imports: [CommonSearchModule, PrismaModule],
-  controllers: [SearchController, AdminSearchController, CreatorSearchController],
+  controllers: [
+    SearchController,
+    AdminSearchController,
+    CreatorSearchController,
+  ],
 })
 export class SearchModule {}

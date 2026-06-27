@@ -208,7 +208,7 @@ export function validateEnv(config: Record<string, unknown>) {
     );
   }
 
-  if (validated.NODE_ENV === 'production') {
+  if (validated.NODE_ENV === Environment.Production) {
     const missing = PROD_REQUIRED.filter((key) => !validated[key]);
 
     if (missing.length > 0) {

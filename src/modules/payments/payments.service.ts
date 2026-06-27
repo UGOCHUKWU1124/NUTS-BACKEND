@@ -344,7 +344,11 @@ export class PaymentsService {
           for (const item of order.orderItems) {
             const earning = new Prisma.Decimal(
               Number(
-                (Number(item.unitPrice) * item.quantity * CREATOR_COMMISSION_RATE).toFixed(2),
+                (
+                  Number(item.unitPrice) *
+                  item.quantity *
+                  CREATOR_COMMISSION_RATE
+                ).toFixed(2),
               ),
             );
             const existing =
@@ -455,7 +459,11 @@ export class PaymentsService {
           for (const item of orderWithItems.orderItems) {
             const earning = new Prisma.Decimal(
               Number(
-                (Number(item.unitPrice) * item.quantity * CREATOR_COMMISSION_RATE).toFixed(2),
+                (
+                  Number(item.unitPrice) *
+                  item.quantity *
+                  CREATOR_COMMISSION_RATE
+                ).toFixed(2),
               ),
             );
             const existing =

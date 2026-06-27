@@ -41,8 +41,14 @@ export class SearchController {
           properties: {
             data: {
               oneOf: [
-                { type: 'array', items: { $ref: getSchemaPath(SearchResultDto) } },
-                { type: 'array', items: { $ref: getSchemaPath(SearchProductHitDto) } },
+                {
+                  type: 'array',
+                  items: { $ref: getSchemaPath(SearchResultDto) },
+                },
+                {
+                  type: 'array',
+                  items: { $ref: getSchemaPath(SearchProductHitDto) },
+                },
               ],
             },
           },

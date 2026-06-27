@@ -74,7 +74,10 @@ export function assertNoDuplicateVariantOptions(
   const canonicalNew = canonicalizeOptions(newOptions);
 
   const isDuplicate = existingOptions.some((existing) => {
-    if (excludeVariantId && (existing as any).id === excludeVariantId) {
+    if (
+      excludeVariantId &&
+      (existing as { id?: string }).id === excludeVariantId
+    ) {
       return false;
     }
     return canonicalizeOptions(normalizeOptions(existing)) === canonicalNew;

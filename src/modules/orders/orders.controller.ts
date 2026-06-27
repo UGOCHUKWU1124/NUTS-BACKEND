@@ -38,7 +38,10 @@ import { CheckoutDto } from './dto/checkout.dto';
 import { CheckoutResponseDto } from './dto/checkout-response.dto';
 import { OrderResponseDto } from './dto/order-response.dto';
 import { UpdateOrderShippingDto } from './dto/update-order-shipping.dto';
-import { ApiResponseDto, PaginationMetaDto } from 'src/modules/shared/dto/api-response.dto';
+import {
+  ApiResponseDto,
+  PaginationMetaDto,
+} from 'src/modules/shared/dto/api-response.dto';
 
 @ApiTags('ORDERS')
 @ApiBearerAuth('JWT-auth')
@@ -163,7 +166,6 @@ export class OrdersController {
   }> {
     return this.ordersService.findMine(userId, query);
   }
-
 
   @Get(':id')
   @Message('Order retrieved successfully')

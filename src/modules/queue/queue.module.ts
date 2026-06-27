@@ -13,6 +13,10 @@ import { InventoryProcessor } from './processors/inventory.processor';
 import { EmailTemplatesService } from 'src/modules/notification/templates/email-templates.service';
 import { QUEUE_JOB_NAMES } from './constants/queue-names.constant';
 
+// BullMQ workers receive Job<unknown> from the queue framework; each processor
+// narrows the type internally, so the generic cast here is intentional.
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+
 @Module({
   providers: [
     // Producers
@@ -135,3 +139,5 @@ export class QueueModule implements OnModuleInit {
     });
   }
 }
+
+/* eslint-enable @typescript-eslint/no-unsafe-argument */

@@ -331,7 +331,9 @@ export class CategoriesService {
       sku: product.sku,
       variants: product.variants.map((v) => {
         const options = Array.isArray(v.options)
-          ? (v.options as any[]).map(({ name, value }) => ({ name, value }))
+          ? (v.options as Array<{ name: string; value: string }>).map(
+              ({ name, value }) => ({ name, value }),
+            )
           : Object.entries(v.options as Record<string, string>).map(
               ([name, value]) => ({ name, value }),
             );

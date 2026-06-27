@@ -55,8 +55,9 @@ export class BullMQService implements OnModuleDestroy {
 
     // BullMQ workers need a dedicated connection with maxRetriesPerRequest: null.
     // Same URL config as the global RedisModule, just with the required worker setting.
-    this.workerConnection = new Redis(this.redisUrl, { maxRetriesPerRequest: null });
-
+    this.workerConnection = new Redis(this.redisUrl, {
+      maxRetriesPerRequest: null,
+    });
 
     this.defaultWorkerOptions = {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -67,7 +68,6 @@ export class BullMQService implements OnModuleDestroy {
       stalledInterval: 15000,
     };
   }
-
 
   createQueue(name: string, options?: Partial<QueueOptions>): Queue {
     if (this.queues.has(name)) {
@@ -252,11 +252,12 @@ export class BullMQService implements OnModuleDestroy {
     await Promise.all(queueClosePromises);
 
     // Disconnect the dedicated worker Redis connection
-    await this.workerConnection.quit().catch(() => this.workerConnection.disconnect());
+    await this.workerConnection
+      .quit()
+      .catch(() => this.workerConnection.disconnect());
 
     this.logger.log('BullMQ workers and queues closed');
   }
-
 
   private getOrCreateQueue(name: string): Queue {
     if (!this.queues.has(name)) {

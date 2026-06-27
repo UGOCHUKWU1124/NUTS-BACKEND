@@ -42,7 +42,6 @@ import {
 import { ApiResponseDto } from 'src/modules/shared/dto/api-response.dto';
 import { AccountLockGuard } from 'src/modules/security/guards/account-lock.guard';
 
-
 @ApiTags('ADMIN - AUTH')
 @Controller('admin/auth')
 export class AdminAuthController {

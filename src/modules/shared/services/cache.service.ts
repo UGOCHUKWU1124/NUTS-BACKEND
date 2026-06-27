@@ -4,11 +4,11 @@
  * Supports Redis integration for distributed caching
  */
 
-import { Injectable, Inject, Optional } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 // Simple in-memory cache implementation
 interface CacheEntry {
-  value: any;
+  value: unknown;
   expiresAt: number;
 }
 
@@ -55,7 +55,7 @@ export class CacheService {
   /**
    * Get value from cache
    */
-  async get<T = any>(key: string): Promise<T | undefined> {
+  get<T = unknown>(key: string): T | undefined {
     const entry = this.cache.get(key);
     if (!entry) return undefined;
 
@@ -71,12 +71,8 @@ export class CacheService {
   /**
    * Set value in cache
    */
-  async set<T = any>(
-    key: string,
-    value: T,
-    options?: CacheOptions,
-  ): Promise<void> {
-    const ttl = options?.ttl || this.DEFAULT_TTL;
+  set<T = unknown>(key: string, value: T, options?: CacheOptions): void {
+    const ttl = options?.ttl ?? this.DEFAULT_TTL;
     const expiresAt = Date.now() + ttl * 1000;
     this.cache.set(key, { value, expiresAt });
   }
@@ -84,14 +80,14 @@ export class CacheService {
   /**
    * Delete value from cache
    */
-  async delete(key: string): Promise<void> {
+  del(key: string): void {
     this.cache.delete(key);
   }
 
   /**
    * Delete all values matching pattern
    */
-  async deletePattern(pattern: string): Promise<void> {
+  delByPattern(pattern: string): void {
     const regex = new RegExp(pattern);
     const keysToDelete = Array.from(this.cache.keys()).filter((key) =>
       regex.test(key),
@@ -104,37 +100,53 @@ export class CacheService {
   /**
    * Clear entire cache
    */
-  async clear(): Promise<void> {
+  clear(): void {
     this.cache.clear();
   }
 
   /**
    * Get or compute value (cache-aside pattern)
    */
-  async getOrCompute<T = any>(
+  async wrap<T = unknown>(
     key: string,
+    ttlSeconds: number,
     computeFn: () => Promise<T>,
-    options?: CacheOptions,
   ): Promise<T> {
-    // Try to get from cache first
-    const cached = await this.get<T>(key);
+    const cached = this.get<T>(key);
     if (cached !== undefined) {
       return cached;
     }
 
-    // Compute and cache
     const value = await computeFn();
-    await this.set(key, value, options);
+    this.set(key, value, { ttl: ttlSeconds });
+    return value;
+  }
+
+  /**
+   * Get or compute value (cache-aside pattern, legacy API)
+   */
+  async getOrCompute<T = unknown>(
+    key: string,
+    computeFn: () => Promise<T>,
+    options?: CacheOptions,
+  ): Promise<T> {
+    const cached = this.get<T>(key);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const value = await computeFn();
+    this.set(key, value, options);
     return value;
   }
 
   /**
    * Batch get multiple values
    */
-  async mget(keys: string[]): Promise<Record<string, any>> {
-    const results: Record<string, any> = {};
+  mget(keys: string[]): Record<string, unknown> {
+    const results: Record<string, unknown> = {};
     for (const key of keys) {
-      results[key] = await this.get(key);
+      results[key] = this.get(key);
     }
     return results;
   }
@@ -142,50 +154,47 @@ export class CacheService {
   /**
    * Batch set multiple values
    */
-  async mset(
-    values: Record<string, any>,
-    options?: CacheOptions,
-  ): Promise<void> {
+  mset(values: Record<string, unknown>, options?: CacheOptions): void {
     for (const [key, value] of Object.entries(values)) {
-      await this.set(key, value, options);
+      this.set(key, value, options);
     }
   }
 
   /**
    * Increment counter
    */
-  async increment(key: string, amount = 1): Promise<number> {
-    const current = (await this.get<number>(key)) || 0;
+  increment(key: string, amount = 1): number {
+    const current = this.get<number>(key) ?? 0;
     const updated = current + amount;
-    await this.set(key, updated);
+    this.set(key, updated);
     return updated;
   }
 
   /**
    * Decrement counter
    */
-  async decrement(key: string, amount = 1): Promise<number> {
+  decrement(key: string, amount = 1): number {
     return this.increment(key, -amount);
   }
 
   /**
    * Set with automatic expiration
    */
-  async setWithExpiry(
+  setWithExpiry(
     key: string,
-    value: any,
+    value: unknown,
     expiresIn: number, // milliseconds
-  ): Promise<void> {
-    await this.set(key, value, { ttl: Math.ceil(expiresIn / 1000) });
+  ): void {
+    this.set(key, value, { ttl: Math.ceil(expiresIn / 1000) });
     // Auto-delete after expiry
-    setTimeout(() => this.delete(key), expiresIn);
+    setTimeout(() => this.del(key), expiresIn);
   }
 
   /**
    * Bulk invalidation by pattern
    */
-  async invalidatePattern(pattern: string): Promise<void> {
-    await this.deletePattern(pattern);
+  invalidatePattern(pattern: string): void {
+    this.delByPattern(pattern);
   }
 
   /**
@@ -198,8 +207,8 @@ export class CacheService {
   /**
    * Cache product details (1 hour TTL)
    */
-  async cacheProductDetails(productId: string, data: any): Promise<void> {
-    await this.set(this.buildKey(CacheKeys.PRODUCT_DETAILS, productId), data, {
+  cacheProductDetails(productId: string, data: unknown): void {
+    this.set(this.buildKey(CacheKeys.PRODUCT_DETAILS, productId), data, {
       ttl: 3600,
     });
   }
@@ -207,25 +216,23 @@ export class CacheService {
   /**
    * Get cached product details
    */
-  async getProductDetailsFromCache(
-    productId: string,
-  ): Promise<any | undefined> {
+  getProductDetailsFromCache(productId: string): unknown {
     return this.get(this.buildKey(CacheKeys.PRODUCT_DETAILS, productId));
   }
 
   /**
    * Invalidate product cache
    */
-  async invalidateProductCache(productId: string): Promise<void> {
-    await this.deletePattern(`^${CacheKeys.PRODUCT_DETAILS}${productId}$`);
-    await this.deletePattern(`^${CacheKeys.PRODUCT_CARD}${productId}$`);
+  invalidateProductCache(productId: string): void {
+    this.delByPattern(`^${CacheKeys.PRODUCT_DETAILS}${productId}$`);
+    this.delByPattern(`^${CacheKeys.PRODUCT_CARD}${productId}$`);
   }
 
   /**
    * Cache creator profile (30 minutes TTL)
    */
-  async cacheCreatorProfile(creatorId: string, data: any): Promise<void> {
-    await this.set(this.buildKey(CacheKeys.CREATOR_PROFILE, creatorId), data, {
+  cacheCreatorProfile(creatorId: string, data: unknown): void {
+    this.set(this.buildKey(CacheKeys.CREATOR_PROFILE, creatorId), data, {
       ttl: 1800,
     });
   }
@@ -233,46 +240,44 @@ export class CacheService {
   /**
    * Get cached creator profile
    */
-  async getCreatorProfileFromCache(
-    creatorId: string,
-  ): Promise<any | undefined> {
+  getCreatorProfileFromCache(creatorId: string): unknown {
     return this.get(this.buildKey(CacheKeys.CREATOR_PROFILE, creatorId));
   }
 
   /**
    * Invalidate creator cache
    */
-  async invalidateCreatorCache(creatorId: string): Promise<void> {
-    await this.deletePattern(`^${CacheKeys.CREATOR_PROFILE}${creatorId}$`);
-    await this.deletePattern(`^${CacheKeys.CREATOR_STORE}${creatorId}$`);
+  invalidateCreatorCache(creatorId: string): void {
+    this.delByPattern(`^${CacheKeys.CREATOR_PROFILE}${creatorId}$`);
+    this.delByPattern(`^${CacheKeys.CREATOR_STORE}${creatorId}$`);
   }
 
   /**
    * Cache category tree (2 hours TTL)
    */
-  async cacheCategoryTree(data: any): Promise<void> {
-    await this.set(CacheKeys.CATEGORY_TREE, data, { ttl: 7200 });
+  cacheCategoryTree(data: unknown): void {
+    this.set(CacheKeys.CATEGORY_TREE, data, { ttl: 7200 });
   }
 
   /**
    * Get cached category tree
    */
-  async getCategoryTreeFromCache(): Promise<any | undefined> {
+  getCategoryTreeFromCache(): unknown {
     return this.get(CacheKeys.CATEGORY_TREE);
   }
 
   /**
    * Invalidate category cache
    */
-  async invalidateCategoryCache(): Promise<void> {
-    await this.delete(CacheKeys.CATEGORY_TREE);
+  invalidateCategoryCache(): void {
+    this.del(CacheKeys.CATEGORY_TREE);
   }
 
   /**
    * Cache discount code (validation cache, 5 minutes TTL)
    */
-  async cacheDiscountCode(code: string, data: any): Promise<void> {
-    await this.set(this.buildKey(CacheKeys.DISCOUNT_CODE, code), data, {
+  cacheDiscountCode(code: string, data: unknown): void {
+    this.set(this.buildKey(CacheKeys.DISCOUNT_CODE, code), data, {
       ttl: 300,
     });
   }
@@ -280,15 +285,15 @@ export class CacheService {
   /**
    * Get cached discount code
    */
-  async getDiscountCodeFromCache(code: string): Promise<any | undefined> {
+  getDiscountCodeFromCache(code: string): unknown {
     return this.get(this.buildKey(CacheKeys.DISCOUNT_CODE, code));
   }
 
   /**
    * Invalidate discount code cache
    */
-  async invalidateDiscountCodeCache(code: string): Promise<void> {
-    await this.delete(this.buildKey(CacheKeys.DISCOUNT_CODE, code));
+  invalidateDiscountCodeCache(code: string): void {
+    this.del(this.buildKey(CacheKeys.DISCOUNT_CODE, code));
   }
 
   /**
@@ -301,7 +306,7 @@ export class CacheService {
   /**
    * Get cache manager stats (if available)
    */
-  async getStats(): Promise<any> {
+  getStats(): { available: boolean; keys: number } {
     return {
       available: true,
       keys: this.cache.size,
