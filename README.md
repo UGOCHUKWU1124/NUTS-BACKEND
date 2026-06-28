@@ -1,7 +1,5 @@
 Nuts Backend
 
-A production-ready multi-vendor e-commerce backend built with NestJS.
-
 Currently Implemented
 
 Core Framework
