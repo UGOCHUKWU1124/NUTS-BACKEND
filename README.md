@@ -1,168 +1,166 @@
-# Nuts Backend
+Nuts Backend
 
-Multi-vendor e-commerce platform. 
+A production-ready multi-vendor e-commerce backend built with NestJS.
 
-### Currently Implemented
+Currently Implemented
 
-#### Core Framework
-| Technology |
-| [NestJS]
-| [TypeScript]
-| [Node.js]
-| [RxJS]
+Core Framework
 
-#### Database & ORM
-| Technology | 
-| [PostgreSQL]
-| [Prisma]
-| [@prisma/adapter-pg]
+* NestJS
+* TypeScript
+* Node.js
+* RxJS
 
-#### Caching, Queues & Streams
-| Technology |
-| [Redis]
-| [ioredis]
-| [BullMQ]
+Database & ORM
 
+* PostgreSQL
+* Prisma
+* @prisma/adapter-pg
 
-#### Authentication & Security
-| Technology 
-| [JWT] Access & refresh token auth |
-| [Passport] JWT strategy for passport |
-| [bcrypt]  Password hashing |
-| [helmet] HTTP security headers |
-| [cookie-parser] Cookie parsing for httpOnly auth cookies |
-| [@nestjs/throttler] Rate limiting (100 req/60s default) |
-| Custom OTP guard | — | One-time password verification guard |
-| Custom JWT guard | — | Global JWT auth guard |
+Caching, Queues & Streams
 
-#### API & Documentation
-| Technology 
-| [Swagger / OpenAPI] API documentation at `/api/docs` |
-| [class-validator] DTO validation |
-| [class-transformer] Payload transformation |
-| [compression] | Gzip/brotli response compression |
+* Redis
+* ioredis
+* BullMQ
 
-#### Payments
-| Technology
-| [Paystack] Payment gateway — initialize, verify, webhooks, refunds |
-| [nanoid] Idempotency key generation |
+Authentication & Security
 
+* JWT — Access & Refresh Token authentication
+* Passport — JWT strategy
+* bcrypt — Password hashing
+* Helmet — HTTP security headers
+* cookie-parser — HTTP-only cookie parsing
+* @nestjs/throttler — Rate limiting (100 requests / 60 seconds)
+* Custom OTP Guard — One-time password verification
+* Custom JWT Guard — Global JWT authentication
 
-#### Email & Notifications
-| Technology
-| [nodemailer] SMTP email sending |
-| SMTP configuration Host, port, user, pass, secure |
+API & Documentation
 
+* Swagger / OpenAPI — API documentation available at /api/docs
+* class-validator — DTO validation
+* class-transformer — Request payload transformation
+* compression — Gzip/Brotli response compression
 
-#### Input Sanitization
-| Technology 
-| [sanitize-html] HTML sanitization pipe |
-| Custom NormalizeInput pipe | Input normalization |
-| Custom SanitizeHtml pipe | XSS prevention |
+Payments
 
-#### ID Generation
-| Technology 
-| [uuid] UUID generation |
-| [nanoid] Compact unique IDs |
+* Paystack — Payment initialization, verification, webhooks, refunds
+* nanoid — Idempotency key generation
 
-#### Testing
-| Technology 
-| [Jest] Unit testing framework |
-| [Supertest] HTTP integration testing |
-| [ts-jest] TypeScript test compilation |
+Email & Notifications
 
-#### Tooling & Linting
-| Technology
-| [ESLint] Code linting (flat config, typescript-eslint) |
-| [Prettier] Code formatting |
-| [TypeScript ESLint] Type-aware lint rules |
+* Nodemailer — SMTP email delivery
+* SMTP Configuration — Host, port, username, password, secure connection
 
-#### DevOps / CI
-| Technology 
-| [GitHub Actions] CI — lint, build, unit test on PR to `development`/`main` |
+Input Sanitization
 
-#### Business Modules
-| Module 
-| AuthModule | Customer register, login, logout, refresh, password reset, OTP |
-| UsersModule | Profile view/update, password change, deactivate/delete |
-| CartModule | Add/update/remove items, clear cart |
-| CategoriesModule | Nested category hierarchy, slug resolution |
-| ProductsModule | Catalog browse, search, filter, stock |
-| ProductVariantsModule | Sizes, colors, stock per variant |
-| OrdersModule | Checkout, view orders, cancel, update shipping |
-| PaymentsModule | Paystack init, verify, webhooks, refunds |
-| CreatorsModule | Creator register/login/profile, account management |
-| WishlistModule | Add/remove products & variants |
-| ReviewsModule | Create, view by product, delete own reviews |
-| WalletModule | User wallet + creator wallet — balance, transactions |
-| ReferralModule | Referral codes, rewards, discount tracking |
-| ShippingAddressesModule | Saved addresses, set default, delete |
-| HealthModule | Liveness probe, database connectivity |
+* sanitize-html — HTML sanitization
+* Custom NormalizeInput Pipe — Input normalization
+* Custom SanitizeHtml Pipe — XSS prevention
 
-#### Creator Modules
-| Module 
-| Creators Auth | Register, login, logout, refresh, OTP, password reset |
-| Creator Account | View/update profile, deactivate, reactivate, delete account |
-| Creator Products | CRUD own products, stock adjustments, activate/deactivate |
-| Creator Product Variants | CRUD own variants, stock adjustments, activate/deactivate |
-| Creator Orders | View orders containing own products, update fulfillment status |
-| Creator Wallet | View balance, transaction history, manage payouts |
-| Creator Analytics | Revenue, top products, performance metrics |
-| Creator Discount Codes | Create, list, deactivate, delete own discount codes |
-| Public Store | View individual creator storefronts |
+ID Generation
+
+* uuid — UUID generation
+* nanoid — Compact unique ID generation
+
+Testing
+
+* Jest — Unit testing
+* Supertest — HTTP integration testing
+* ts-jest — TypeScript test compilation
+
+Tooling & Linting
+
+* ESLint — Code linting (Flat Config + TypeScript ESLint)
+* Prettier — Code formatting
+* TypeScript ESLint — Type-aware linting rules
+
+DevOps / CI
+
+* GitHub Actions — Continuous Integration (lint, build, unit tests on pull requests to development and main)
+
+Business Modules
+
+Customer Modules
+
+* AuthModule — Customer registration, login, logout, refresh tokens, password reset, OTP verification
+* UsersModule — Profile management, password change, deactivate/delete account
+* CartModule — Add, update, remove items, clear cart
+* CategoriesModule — Nested category hierarchy and slug resolution
+* ProductsModule — Product catalog, search, filtering, stock management
+* ProductVariantsModule — Sizes, colors, variant stock management
+* OrdersModule — Checkout, order history, cancellation, shipping updates
+* PaymentsModule — Paystack integration, verification, webhooks, refunds
+* CreatorsModule — Creator registration, authentication, account management
+* WishlistModule — Wishlist management for products and variants
+* ReviewsModule — Product reviews and ratings
+* WalletModule — Customer and creator wallet management
+* ReferralModule — Referral codes, rewards, discount tracking
+* ShippingAddressesModule — Saved addresses, default address management
+* HealthModule — Liveness probe and database connectivity checks
+
+Creator Modules
+
+* Creators Auth — Register, login, logout, refresh tokens, OTP verification, password reset
+* Creator Account — Profile management, deactivate/reactivate, delete account
+* Creator Products — CRUD operations, stock management, activate/deactivate products
+* Creator Product Variants — CRUD operations, stock management, activate/deactivate variants
+* Creator Orders — View creator orders, update fulfillment status
+* Creator Wallet — Wallet balance, transactions, payout management
+* Creator Analytics — Revenue analytics, top-selling products, performance metrics
+* Creator Discount Codes — Create, manage, deactivate discount codes
+* Public Store — Individual creator storefronts
 
 Admin Modules
-| Module 
-| AdminAuthModule | Setup, login, logout, refresh |
-| AdminUsersModule | List, view, deactivate/reactivate, delete users |
-| AdminProductModule | CRUD, stock, activate/deactivate any product |
-| AdminProductVariantsModule | CRUD, stock, activate/deactivate any variant |
-| AdminOrdersModule | List/filter all orders, update any order status |
-| AdminCategoryModule | Create, update, activate/deactivate, delete |
-| AdminCreatorsModule | List, approve, verify, suspend, delete |
-| AdminCacheModule | Cache management |
-| AdminPromotionModule | Platform-wide discount codes |
-| AdminAnalyticsModule | Summary, revenue, top products/creators, funnel, audit |
-| AdminSearchModule | Global search — users, creators, products, orders, codes |
-| AuditLogModule | Activity audit logging |
-| UploadModule | File upload abstraction (local storage strategy, extensible) |
 
-## Infrastructure & Support
-| Module 
-| QueueModule | Job producers & processors (analytics, cart, email, inventory) |
-| NotificationModule | Email events, listeners, templates |
-| TrackingModule | Product view tracking, search query tracking |
-| AnalyticsModule | Admin + creator analytics, snapshots, reports, cron summaries |
-| CronModule | Scheduled tasks — abandoned cart, creator summary, low stock |
-| SecurityModule | Custom guards, middleware, services, distributed throttling |
-| SearchModule | Storefront search, autocomplete, admin/creator search controllers |
-| PromotionsModule | Discount code service (customer/creator scoped) |
+* AdminAuthModule — Setup, login, logout, refresh authentication
+* AdminUsersModule — Manage users, deactivate/reactivate, delete accounts
+* AdminProductModule — Full product management
+* AdminProductVariantsModule — Full product variant management
+* AdminOrdersModule — View and manage all orders
+* AdminCategoryModule — Category management
+* AdminCreatorsModule — Approve, verify, suspend, delete creators
+* AdminCacheModule — Cache management
+* AdminPromotionModule — Platform-wide promotions and discount codes
+* AdminAnalyticsModule — Revenue analytics, top products, creators, funnel metrics, audit reports
+* AdminSearchModule — Global search across users, creators, products, orders, promotions
+* AuditLogModule — Activity audit logging
+* UploadModule — File upload abstraction with extensible storage strategy
 
+Infrastructure & Support
 
-### To Be Implemented / next phase 
+* QueueModule — Job producers and processors (analytics, carts, emails, inventory)
+* NotificationModule — Email events, listeners, templates
+* TrackingModule — Product views and search query tracking
+* AnalyticsModule — Admin and creator analytics, snapshots, scheduled reports
+* CronModule — Scheduled jobs (abandoned carts, creator summaries, low stock alerts)
+* SecurityModule — Custom guards, middleware, distributed throttling
+* SearchModule — Storefront search, autocomplete, admin and creator search
+* PromotionsModule — Customer and creator discount code services
 
-Sentry Error tracking & performance monitoring (PII-scrubbed) |
-Prometheus Metrics — HTTP request duration, queue processing duration |
-Grafana Dashboards (pre-provisioned) |
-Payments | **Payout Splits** | Implement Paystack Split — auto-split revenue between creator and company at transaction time |
-Payments | **Paystack Dedicated Virtual Account** | Use Paystack's dedicated virtual account feature for seamless payment collection per creator |
-Wallet | **Improved Wallet System** | Enhance wallet — settlement scheduling, withdrawal requests, payout history, admin payout management |
-Containerization | **Docker** | Dockerfile for the app + full `docker-compose.yml` bundling app, PostgreSQL, Redis, Prometheus, and Grafana |
-Blue-green / canary deploys | Zero-downtime deployment strategy |
-Deployment pipeline | GitHub Actions → build → deploy |
-Deployment | **AWS Deployment** | Deploy to AWS (ECS/EKS/EC2) with proper networking, security groups, and auto-scaling |
-Reverse Proxy | **Nginx** | Reverse proxy, SSL termination, load balancing, and static file serving |
-CI/CD | **Proper CI/CD Pipeline** | GitHub Actions → build → test → deploy to AWS (staging → production) |
-Environment | **Env & Secrets Management** | Centralized env management across environments (dev/staging/prod) — AWS Secrets Manager |
-Search | **Algolia** | Replace Prisma `contains` search with Algolia for full-text search, faceted filtering, and typo-tolerant autocomplete |
-Email | **Brevo (Sendinblue)** | Swap current SMTP/nodemailer for Brevo — transactional emails, templates, delivery tracking |
-File Uploads | **Cloud Storage Strategy** | Replace local storage with AWS S3— image upload, optimization, CDN delivery |
-Testing | **JMeter** | Load and stress testing — identify bottlenecks, establish performance baselines |
-Notifications | **Better Notification System** | In-app notifications (read/unread, paginated history), email digests, push notifications (FCM), SMS fallback |
-Testing | **E2E Test Expansion** | Comprehensive integration test suite covering all major flows |
-Monitoring | **Alerting & Uptime** | Prometheus AlertManager rules, uptime monitoring (Better Uptime / Checkly) |
-Reliability | **Database Backups** | Automated PostgreSQL backup & restore strategy |
-Socket.IO / NestJS WebSockets | Real-time order status updates, notifications |
-Live order tracking | Real-time fulfillment progress |
-Performance benchmarks | Baseline performance across endpoints |
-API versioning strategy | Formal versioned routes (v2, v3) |
+To Be Implemented / Next Phase
+
+* Sentry — Error tracking and performance monitoring (PII scrubbed)
+* Prometheus — Metrics collection (HTTP request duration, queue processing duration)
+* Grafana — Pre-provisioned monitoring dashboards
+* Paystack Split — Automatic revenue splitting between creators and the platform
+* Paystack Dedicated Virtual Accounts — Seamless payment collection for creators
+* Enhanced Wallet System — Settlement scheduling, withdrawal requests, payout history, admin payout management
+* Docker — Dockerfile and complete docker-compose.yml with PostgreSQL, Redis, Prometheus, and Grafana
+* Blue-Green / Canary Deployments — Zero-downtime deployment strategy
+* GitHub Actions Deployment Pipeline — Build and automated deployments
+* AWS Deployment — ECS/EKS/EC2 deployment with networking, security groups, and auto scaling
+* Nginx — Reverse proxy, SSL termination, load balancing, static asset serving
+* Complete CI/CD Pipeline — Staging → Production deployments
+* Environment & Secrets Management — AWS Secrets Manager for centralized configuration
+* Algolia — Full-text search, faceted filtering, typo-tolerant autocomplete
+* Brevo — Transactional email service with templates and delivery tracking
+* AWS S3 Storage — Image uploads, optimization, CDN delivery
+* JMeter — Load and stress testing
+* Advanced Notification System — In-app notifications, push notifications (FCM), SMS fallback, email digests
+* Expanded End-to-End Test Suite
+* Alerting & Uptime Monitoring — Prometheus AlertManager, Better Uptime or Checkly
+* Automated PostgreSQL Backup & Restore Strategy
+* Socket.IO / NestJS WebSockets — Real-time order status updates and notifications
+* Live Order Tracking
+* Performance Benchmarking
+* API Versioning Strategy (v2, v3, …)
